@@ -4,6 +4,7 @@ import { process as processComments } from "./processComments";
 import { process as processRemove } from "./processRemove";
 import { process as processESIVars } from "./processESIVars";
 import { process as processConditionals } from "./processConditionals";
+import { process as processIncludes } from "./processIncludes";
 
 
 export type ESIVars = {
@@ -86,6 +87,10 @@ export class esi {
     text = await processESIVars(eventData, text)
     let vars = false;
     [text, vars] = await processConditionals(eventData, text)
+
+    // finally our includes
+    text = await processIncludes(eventData, text, vars)
+
     return text
   }
 
