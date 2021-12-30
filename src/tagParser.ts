@@ -26,7 +26,7 @@ export class tagParser {
 	}
 
 	async next(tagname?: string): Promise<[tag | null, string | undefined, string | undefined]> {
-		let tag = await this.#findWholeTag(tagname);
+		const tag = await this.#findWholeTag(tagname);
 		let before, after
 
 		if (tag) {
@@ -49,7 +49,7 @@ export class tagParser {
 			return /<(!--esi)/is
 		}
 
-		return new RegExp(`<(${tag})(?:\\s*(?:[a-z]+=\\".+?(?<!\\\\)\\"))?[^>]*?(?:\\s*)(\/>|>)?`);
+		return new RegExp(`<(${tag})(?:\\s*(?:[a-z]+=\\".+?(?<!\\\\)\\"))?[^>]*?(?:\\s*)(/>|>)?`);
 
 	}
 
@@ -57,7 +57,7 @@ export class tagParser {
 		if (tag == "!--esi") {
 			return /(?:<(!--esi)|(-->))/
 		}
-		return new RegExp(`<[\\/]?(${tag})(?:\\s*(?:[a-z]+=\\".+?(?<!\\\\)\\"))?[^>]*?(?:\\s*)(\\s*\/>|>)?`);
+		return new RegExp(`<[\\/]?(${tag})(?:\\s*(?:[a-z]+=\\".+?(?<!\\\\)\\"))?[^>]*?(?:\\s*)(\\s*/>|>)?`);
 	}
 
 	closeTag(tag: string): RegExp {
@@ -67,14 +67,14 @@ export class tagParser {
 		return new RegExp(`<\\/(${tag})\\s*>`)
 	}
 
-	async #findWholeTag(tag?: string) {
-		let markup = this.#content.slice(this.#pos)
+	async #findWholeTag(tag?: string): Promise<tag | null> {
+		const markup = this.#content.slice(this.#pos)
 
 		if (!tag) {
 			tag = "(?:!--esi)|(?:esi:[a-z]+)"
 		}
 
-		let open_pos = markup.search(this.openingTag(tag))
+		const open_pos = markup.search(this.openingTag(tag))
 		if (open_pos == -1) {
 			return null
 		}
@@ -84,9 +84,9 @@ export class tagParser {
 			return null
 		}
 
-		let open_pos_end = open_pos + matches[0].length - 1;
+		const open_pos_end = open_pos + matches[0].length - 1;
 
-		let ret: tag = {
+		const ret: tag = {
 			opening: {
 				from: open_pos + this.#pos,
 				to: open_pos_end + this.#pos,
@@ -117,7 +117,7 @@ export class tagParser {
 			closing_f = matches.index
 			closing_t = matches.index + matches[0].length
 
-			let tagInner = markup.substring(search).substring(closing_f, closing_t)
+			const tagInner = markup.substring(search).substring(closing_f, closing_t)
 
 			// check our depth
 			if (tagInner.search(this.openingTag(ret.tagname)) !== -1) {
@@ -132,17 +132,18 @@ export class tagParser {
 				break
 			}
 
+			// eslint-disable-next-line no-constant-condition
 		} while (true)
 
-		if (closing_t && level == 0) {
+		if (closing_t && level == 0 && matches) {
 
 			closing_t = search - 1
-			closing_f = search - matches![0].length
+			closing_f = search - matches[0].length
 
 			ret.closing = {
 				from: closing_f + this.#pos,
 				to: closing_t + this.#pos,
-				tag: matches![0]
+				tag: matches[0]
 			}
 			ret.contents = markup.substring(open_pos_end + 1, closing_f)
 			ret.whole = markup.substring(open_pos, closing_t + 1)

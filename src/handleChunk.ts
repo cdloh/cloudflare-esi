@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { tagParser } from "./tagParser";
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+// eslint-disable-next-line @typescript-eslint/ban-types
 export function create(writer: Function) {
 
 	let tag_hint: string | null
@@ -14,10 +17,9 @@ export function create(writer: Function) {
 
 		value = prev_chunk + value
 
-		let parser = new tagParser(value);
+		const parser = new tagParser(value);
 		do {
-			let tag, before, after
-			[tag, before, after] = await parser.next()
+			const [tag, before, after] = await parser.next()
 
 			if (tag && tag.whole) {
 				if (before) {
@@ -25,10 +27,7 @@ export function create(writer: Function) {
 				}
 				writer(tag.whole, true)
 
-				// TODO figure out how to stop this
-				// we know that after is set if whole is set
-				// @ts-ignore
-				value = after
+				value = after as string
 				prev_chunk = ""
 			} else if (tag && !tag.whole) {
 				if (typeof before == "string" && before.length !== 0) {
@@ -38,13 +37,12 @@ export function create(writer: Function) {
 				prev_chunk = tag.opening.tag + after
 				break
 			} else {
-				let incompleteTag = value.search(/<(?:!--)?esi/);
+				const incompleteTag = value.search(/<(?:!--)?esi/);
 				if (incompleteTag !== -1) {
-					prev_chunk = prev_chunk
 					break
 				}
 
-				let hintMatch = value.slice(-6).match(/(?:<!--es|<!--e|<!--|<es|<!-|<e|<!|<)$/)
+				const hintMatch = value.slice(-6).match(/(?:<!--es|<!--e|<!--|<es|<!-|<e|<!|<)$/)
 				if (hintMatch) {
 					tag_hint = hintMatch[0]
 					value = value.substring(0, value.length - tag_hint.length)
@@ -55,6 +53,7 @@ export function create(writer: Function) {
 				break
 			}
 
+			// eslint-disable-next-line no-constant-condition
 		} while (true)
 
 		// Check if we had something left over

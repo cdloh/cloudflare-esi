@@ -4,12 +4,11 @@ export async function process(chunk: string, res?: Array<string>, recursion?: nu
 	if (!recursion) { recursion = 0 }
 	if (!res) { res = [] }
 
-	let parser = new tagParser(chunk);
+	const parser = new tagParser(chunk);
 	let hasEscaping = false;
 
 	do {
-		let tag, before, after
-		[tag, before, after] = await parser.next("!--esi")
+		const [tag, before, after] = await parser.next("!--esi")
 
 		if (tag && tag.closing && tag.contents) {
 			hasEscaping = true;
@@ -24,6 +23,7 @@ export async function process(chunk: string, res?: Array<string>, recursion?: nu
 			}
 		} else if (!tag) { break }
 
+		// eslint-disable-next-line no-constant-condition
 	} while (true)
 
 	if (hasEscaping) {
