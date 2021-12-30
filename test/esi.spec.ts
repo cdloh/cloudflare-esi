@@ -47,8 +47,10 @@ beforeEach(() => {
 	parser = new esi(config)
 })
 
-afterAll(async () => {
-	server.close()
+afterAll( (done) => {
+	server.close(() => {
+		done()
+	})
 })
 
 afterEach(async () => {
