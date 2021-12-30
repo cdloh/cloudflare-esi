@@ -6,8 +6,6 @@ export default {
       useESM: true,
     },
   },
-  "collectCoverageFrom": [
-    "src/*.ts",
-  ],
+  collectCoverageFrom: ["src/*.ts"],
   testEnvironment: "miniflare",
 };

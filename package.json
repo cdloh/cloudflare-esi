@@ -4,9 +4,9 @@
   "description": "ESI Parser built to run in Cloudflare workers",
   "type": "module",
   "scripts": {
-    "build-worker": "esbuild worker.ts",
-    "test": "node worker/build.js && node --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --collectCoverage --coverageProvider=v8",
-    "test-debug": "node worker/build.js && node --experimental-vm-modules --inspect-brk node_modules/jest/bin/jest.js --runInBand",
+    "build-worker": "node worker/build.js",
+    "test": "npm run-script build-worker && node --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --collectCoverage --coverageProvider=v8",
+    "test-debug": "npm run-script build-worker && node --experimental-vm-modules --inspect-brk node_modules/jest/bin/jest.js --runInBand",
     "format": "prettier --write  '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "lint": "eslint --max-warnings=0 src && prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "pretty": "prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'"
@@ -38,6 +38,5 @@
     "worktop": "^0.7.3",
     "typescript": "^4.4.4"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }
