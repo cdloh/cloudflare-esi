@@ -1,0 +1,10 @@
+name = "cloudflare-esi"
+type = "javascript"
+
+[build]
+command = "npm run build-worker"
+
+[build.upload]
+format = "modules"
+dir = "worker-dist"
+main = "./worker.mjs"

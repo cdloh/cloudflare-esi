@@ -1,0 +1,42 @@
+{
+  "name": "cloudflare-esi",
+  "version": "0.0.1",
+  "description": "ESI Parser built to run in Cloudflare workers",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --collectCoverage --coverageProvider=v8",
+    "test-debug": "ode --experimental-vm-modules --inspect-brk node_modules/jest/bin/jest.js --runInBand",
+    "format": "prettier --write  '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
+    "lint": "eslint --max-warnings=0 src && prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
+    "pretty": "prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "BSD-2-Clause",
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "typescript",
+      "prettier"
+    ]
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^3.1.1",
+    "@types/jest": "^27.0.2",
+    "@typescript-eslint/eslint-plugin": "^4.16.1",
+    "@typescript-eslint/parser": "^4.16.1",
+    "eslint": "^7.21.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-config-typescript": "^3.0.0",
+    "esbuild": "^0.13.13",
+    "jest": "^27.3.1",
+    "jest-environment-miniflare": "^2.0.0-rc.4",
+    "miniflare": "^2.0.0-rc.4",
+    "prettier": "^2.4.1",
+    "ts-jest": "^27.0.7",
+    "worktop": "^0.7.3",
+    "typescript": "^4.4.4"
+  },
+  "dependencies": {
+  }
+}
