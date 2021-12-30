@@ -1,7 +1,7 @@
 import { urlHandler, checkSurrogate, testResponse } from "./helpers"
 import http from 'http';
 import { AddressInfo } from "net";
-import { esi } from "../src"
+import { esi, ESIConfig } from "../src"
 
 const esiHead = {
 	"Content-Type": "text/html",
@@ -9,6 +9,7 @@ const esiHead = {
 }
 
 let parser: esi
+let config: ESIConfig
 const makeRequest = async function (request: string, details?: RequestInit) {
 	const reqUrl = new URL(request, `http://localhost:${port}`).toString()
 	const req = new Request(reqUrl, details)
@@ -36,7 +37,14 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
-	parser = new esi()
+	config = {
+		enabled: true,
+		contentTypes: [
+			'text/html',
+			'text/plain'
+		]
+	}
+	parser = new esi(config)
 })
 
 afterAll(async () => {
@@ -45,6 +53,13 @@ afterAll(async () => {
 
 afterEach(async () => {
 	expect(routeHandler.verify()).toBeTruthy()
+	config = {
+		enabled: true,
+		contentTypes: [
+			'text/html',
+			'text/plain'
+		]
+	}
 })
 
 test("TEST 1: Single line comments removed", async () => {
@@ -322,6 +337,8 @@ test.todo("TEST 7e: Leave instructions intact if ESI delegation is enabled by IP
 
 test("TEST 7f: Leave instructions intact if allowed types does not match on the slow path.", async () => {
 	const url = `/esi/test-7f`
+	config.contentTypes = ['invalid/type']
+	parser = new esi(config)
 	routeHandler.add(url, function (req, res) {
 		res.writeHead(200, esiHead);
 		res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`)
@@ -826,6 +843,8 @@ test("TEST 24: Fragment recursion limit", async () => {
 
 test("TEST 24b: Lower fragment recursion limit", async () => {
 	const url = `/esi/test-24b`
+	config.recursionLimit = 5
+	parser = new esi(config)
 	routeHandler.add(url, function (req, res) {
 		res.writeHead(200, esiHead);
 		res.say(`p: ${req.headers["x-esi-recursion-level"] || 0}`)
@@ -1174,6 +1193,8 @@ test("TEST 42: By default includes to 3rd party domains are allowed", async () =
 
 test("TEST 43: Disable third party includes", async () => {
 	const url = `/esi/test-43`
+	config.disableThirdPartyIncludes = true
+	parser = new esi(config)
 	routeHandler.add(url, function (req, res) {
 		res.writeHead(200, esiHead);
 		res.end(`<esi:include src="https://jsonplaceholder.typicode.com/todos/1" />`)
@@ -1186,6 +1207,11 @@ test("TEST 43: Disable third party includes", async () => {
 
 test("TEST 44: White list third party includes", async () => {
 	const url = `/esi/test-44`
+	config.disableThirdPartyIncludes = true
+	config.thirdPatyIncludesDomainWhitelist = [
+		"jsonplaceholder.typicode.com"
+	]
+	parser = new esi(config)
 	routeHandler.add(url, function (req, res) {
 		res.writeHead(200, esiHead);
 		res.end(`<esi:include src="https://jsonplaceholder.typicode.com/todos/1" />`)
@@ -1251,6 +1277,10 @@ test("TEST 45b: Cookies and Authorization don't propagate to fragment on differe
 
 test("TEST 46: Cookie var blacklist", async () => {
 	const url = `/esi/test-46`
+	config.varsCookieBlacklist = [
+		"not_allowed"
+	]
+	parser = new esi(config)
 	routeHandler.add(url, function (req, res) {
 		res.writeHead(200, esiHead);
 		// Blacklist should apply to expansion in vars
@@ -1279,6 +1309,10 @@ test("TEST 46: Cookie var blacklist", async () => {
 
 test("TEST 46b: Cookie var blacklist on fragment", async () => {
 	const url = `/esi/test-46b`
+	config.varsCookieBlacklist = [
+		"not_allowed"
+	]
+	parser = new esi(config)
 	routeHandler.add(`${url}/fragment_1`, function (req, res) {
 		res.writeHead(200, esiHead);
 		// Blacklist should apply to expansion in vars
