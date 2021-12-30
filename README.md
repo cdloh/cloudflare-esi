@@ -93,7 +93,7 @@ Also thanks to MrSwitch for inspiration from their [ESI repo](https://github.com
 
 This module is licensed under the 2-clause BSD license.
 
-Copyright (c) Callum Loh <xallumloh@mgmail.com>
+Copyright (c) Callum Loh <callumloh@gmail.com>
 
 All rights reserved.
 
