@@ -6,6 +6,15 @@ import { process as processESIVars } from "./processESIVars";
 import { process as processConditionals } from "./processConditionals";
 import { process as processIncludes } from "./processIncludes";
 
+export type ESIConfig = {
+  enabled?: boolean,
+  disableThirdPartyIncludes?: boolean
+  thirdPatyIncludesDomainWhitelist?: string[]
+  varsCookieBlacklist?: string[]
+  contentTypes?: string[]
+  allowSurrogateDelegation?: boolean | string[]
+  recursionLimit?: number
+}
 
 export type ESIVars = {
   headers: { [key: string]: string };
@@ -15,28 +24,47 @@ export type ESIVars = {
 };
 
 export type ESIEventData = {
+  config: ESIConfig
   headers: { [key: string]: string };
   method: string;
   esiArgs: URLSearchParams
   url: URL
-  request: Request,
-  recursion: number,
-
+  request: Request
+  recursion: number
 }
 
 export class esi {
 
-  constructor() { }
+  #options: ESIConfig
 
-  async parse(request: Request, recursion: number = 0): Promise<Response> {
+  constructor(options?: ESIConfig) {
+    const defaultConfig = {
+      recursionLimit: 10,
+      enabled: true,
+      contentTypes: [
+        "text/html",
+        "text/plain"
+      ]
+    }
+    this.#options = { ...defaultConfig, ...options }
+  }
+
+  async parse(request: Request, recursion = 0): Promise<Response> {
+
+    // Hit our limit? Bail out
+    const limit = this.#options.recursionLimit as number
+    if (recursion >= limit) {
+      return new Response("")
+    }
 
     // Get our HTTP_VARS & ESI Vars
     // Remove ESI Vars if they're in the request
     // Return a new request
-    let [esiVarsRequest, esiVars] = await getVars(request)
+    const [esiVarsRequest, esiVars] = await getVars(request)
 
     // pack our nice stuff in
-    let eventData: ESIEventData = {
+    const eventData: ESIEventData = {
+      config: this.#options,
       headers: esiVars.headers,
       method: esiVars.method,
       esiArgs: esiVars.esiArgs,
