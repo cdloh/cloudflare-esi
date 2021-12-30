@@ -1,8 +1,8 @@
 import { tagParser } from "../src/tagParser"
 
 test("Find next tag", async () => {
-	let parser = new tagParser("content-before<foo>inside</foo>content-after")
-	let [tag, parserBefore, parserAfter] = await parser.next("foo")
+	const parser = new tagParser("content-before<foo>inside</foo>content-after")
+	const [tag, parserBefore, parserAfter] = await parser.next("foo")
 	expect(tag).toEqual({
 		opening: { from: 14, to: 18, tag: '<foo>' },
 		tagname: 'foo',
@@ -15,9 +15,9 @@ test("Find next tag", async () => {
 });
 
 describe("Default next tag finds esi", () => {
-	let parser = new tagParser("content-before<esi:foo>inside</esi:foo>content-after<!--esi comment-->last")
+	const parser = new tagParser("content-before<esi:foo>inside</esi:foo>content-after<!--esi comment-->last")
 	test("first tag", async () => {
-		let [tag, parserBefore, parserAfter] = await parser.next()
+		const [tag, parserBefore, parserAfter] = await parser.next()
 		expect(tag).toEqual({
 			opening: { from: 14, to: 22, tag: '<esi:foo>' },
 			tagname: 'esi:foo',
@@ -29,7 +29,7 @@ describe("Default next tag finds esi", () => {
 		expect(parserAfter).toEqual("content-after<!--esi comment-->last")
 	});
 	test("second tag", async () => {
-		let [tag, parserBefore, parserAfter] = await parser.next()
+		const [tag, parserBefore, parserAfter] = await parser.next()
 		expect(tag).toEqual({
 			opening: { from: 52, to: 59, tag: '<!--esi ' },
 			tagname: '!--esi',
@@ -43,8 +43,8 @@ describe("Default next tag finds esi", () => {
 })
 
 test("Finds a unclosed tag", async () => {
-	let parser = new tagParser("content-before<esi:foo>inside content-after<!--esi comment-->last")
-	let [tag, parserBefore, parserAfter] = await parser.next()
+	const parser = new tagParser("content-before<esi:foo>inside content-after<!--esi comment-->last")
+	const [tag, parserBefore, parserAfter] = await parser.next()
 	expect(tag).toEqual({
 		opening: { from: 14, to: 22, tag: '<esi:foo>' },
 		tagname: 'esi:foo',
@@ -57,8 +57,8 @@ test("Finds a unclosed tag", async () => {
 });
 
 test("Finds a closed tag", async () => {
-	let parser = new tagParser("content-before<esi:comment test=\"12345\" />content-after")
-	let [tag, parserBefore, parserAfter] = await parser.next()
+	const parser = new tagParser("content-before<esi:comment test=\"12345\" />content-after")
+	const [tag, parserBefore, parserAfter] = await parser.next()
 	expect(tag).toEqual({
 		opening: { from: 14, to: 41, tag: '<esi:comment test="12345" />' },
 		tagname: 'esi:comment',
@@ -71,8 +71,8 @@ test("Finds a closed tag", async () => {
 });
 
 test("Finds correct tag after an illegal closure", async () => {
-	let parser = new tagParser(`BEFORE CONTENT<esi:when test="$(QUERY_STRING{c}) == 'c'">c<esi:choose></esi:vars alt="BAD ILLEGAL NESTING"><esi:when test="$(QUERY_STRING{l1d}) == 'l1d'">l1d</esi:when><esi:when test="$(QUERY_STRING{l1e}) == 'l1e'">l1e<esi:choose><esi:when test="$(QUERY_STRING{l2f}) == 'l2f'">l2f</esi:when><esi:otherwise>l2 OTHERWISE</esi:otherwise></esi:choose></esi:when><esi:otherwise>l1 OTHERWISE<esi:choose><esi:when test="$(QUERY_STRING{l2g}) == 'l2g'">l2g</esi:when></esi:when alt="MORE BAD ILLEGAL NESTING"></esi:choose></esi:otherwise></esi:choose></esi:when>AFTER`)
-	let [tag, parserBefore, parserAfter] = await parser.next("esi:when|esi:otherwise")
+	const parser = new tagParser(`BEFORE CONTENT<esi:when test="$(QUERY_STRING{c}) == 'c'">c<esi:choose></esi:vars alt="BAD ILLEGAL NESTING"><esi:when test="$(QUERY_STRING{l1d}) == 'l1d'">l1d</esi:when><esi:when test="$(QUERY_STRING{l1e}) == 'l1e'">l1e<esi:choose><esi:when test="$(QUERY_STRING{l2f}) == 'l2f'">l2f</esi:when><esi:otherwise>l2 OTHERWISE</esi:otherwise></esi:choose></esi:when><esi:otherwise>l1 OTHERWISE<esi:choose><esi:when test="$(QUERY_STRING{l2g}) == 'l2g'">l2g</esi:when></esi:when alt="MORE BAD ILLEGAL NESTING"></esi:choose></esi:otherwise></esi:choose></esi:when>AFTER`)
+	const [tag, parserBefore, parserAfter] = await parser.next("esi:when|esi:otherwise")
 	expect(tag).toEqual({
 		opening: { from: 14, to: 56, tag: '<esi:when test="$(QUERY_STRING{c}) == \'c\'">' },
 		tagname: 'esi:when',
@@ -85,8 +85,8 @@ test("Finds correct tag after an illegal closure", async () => {
 });
 
 test("Find tag with attributes", async () => {
-	let parser = new tagParser("content-before<foo attr='value' attr2='value2'>inside</foo>content-after")
-	let [tag, parserBefore, parserAfter] = await parser.next("foo")
+	const parser = new tagParser("content-before<foo attr='value' attr2='value2'>inside</foo>content-after")
+	const [tag, parserBefore, parserAfter] = await parser.next("foo")
 	expect(tag).toEqual({
 		opening: { from: 14, to: 18, tag: `<foo ` },
 		tagname: 'foo',
@@ -100,8 +100,8 @@ test("Find tag with attributes", async () => {
 
 describe("Find nested tags", () => {
 	test("first tag", async () => {
-		let parser = new tagParser("content-before<foo>inside-foo<bar>inside-bar</bar>after-bar<foo>inside-foo-2</foo></foo>content-after");
-		let [tag, parserBefore, parserAfter] = await parser.next("foo")
+		const parser = new tagParser("content-before<foo>inside-foo<bar>inside-bar</bar>after-bar<foo>inside-foo-2</foo></foo>content-after");
+		const [tag, parserBefore, parserAfter] = await parser.next("foo")
 		expect(tag).toEqual({
 			opening: { from: 14, to: 18, tag: `<foo>` },
 			tagname: 'foo',
@@ -113,8 +113,8 @@ describe("Find nested tags", () => {
 		expect(parserAfter).toEqual("content-after")
 	});
 	test("second tag", async () => {
-		let parser = new tagParser("content-before<foo>inside-foo<bar>inside-bar</bar>after-bar<foo>inside-foo-2</foo></foo>content-after");
-		let [tag, parserBefore, parserAfter] = await parser.next("bar")
+		const parser = new tagParser("content-before<foo>inside-foo<bar>inside-bar</bar>after-bar<foo>inside-foo-2</foo></foo>content-after");
+		const [tag, parserBefore, parserAfter] = await parser.next("bar")
 		expect(tag).toEqual({
 			opening: { from: 29, to: 33, tag: '<bar>' },
 			tagname: 'bar',
@@ -128,9 +128,9 @@ describe("Find nested tags", () => {
 })
 
 describe("open pattern matches", () => {
-	let parser = new tagParser("");
-	let pattern = parser.openingTag("tag");
-	let checks = [
+	const parser = new tagParser("");
+	const pattern = parser.openingTag("tag");
+	const checks = [
 		{ string: "start <tag> end", details: "simple tag" },
 		{ string: "start <tag></tag> end", details: "simple closed tag" },
 		{ string: "start <tag> asdfsd </tag> end", details: "simple closed tag with content" },
@@ -145,15 +145,15 @@ describe("open pattern matches", () => {
 	]
 	checks.forEach(function (check) {
 		it(check.details, async () => {
-			let match = check.string.search(pattern);
+			const match = check.string.search(pattern);
 			expect(match).toBeGreaterThan(-1);
 		})
 	})
 });
 describe("close pattern matches", () => {
-	let parser = new tagParser("");
-	let pattern = parser.closeTag("tag");
-	let checks = [
+	const parser = new tagParser("");
+	const pattern = parser.closeTag("tag");
+	const checks = [
 		{ string: "start </tag> end", details: "simple tag" },
 		{ string: "start <tag></tag> end", details: "simple closed tag" },
 		{ string: "start <tag> asdfsd </tag> end", details: "simple closed tag with content" },
@@ -161,15 +161,15 @@ describe("close pattern matches", () => {
 	]
 	checks.forEach(function (check) {
 		test(check.details, async () => {
-			let match = check.string.search(pattern);
+			const match = check.string.search(pattern);
 			expect(match).toBeGreaterThan(-1);
 		})
 	})
 });
 describe("either pattern matches", () => {
-	let parser = new tagParser("");
-	let pattern = parser.eitherTag("tag");
-	let checks = [
+	const parser = new tagParser("");
+	const pattern = parser.eitherTag("tag");
+	const checks = [
 		{ string: "start <tag> end", details: "simple tag" },
 		{ string: "start <tag></tag> end", details: "simple closed tag" },
 		{ string: "start <tag> asdfsd </tag> end", details: "simple closed tag with content" },
@@ -188,7 +188,7 @@ describe("either pattern matches", () => {
 	]
 	checks.forEach(function (check) {
 		test(check.details, async () => {
-			let match = check.string.search(pattern);
+			const match = check.string.search(pattern);
 			expect(match).toBeGreaterThan(-1);
 		})
 	})
