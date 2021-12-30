@@ -1,13 +1,13 @@
 import { parse } from "worktop/cookie"
 import { ESIEventData } from "."
 
-let esiVarsRegex = /(<esi:vars>)(.*?)(<\/esi:vars>)/gs
-let esiVarsPatternRegex = /\$\(([A-Z_]+){?([a-zA-Z\.\-~_%0-9]*)}?\|?(?:([^\s\)']+)|'([^\')]+)')?\)/gs
-let esiGreaterArrow = /</g
-let esiLessArrow = />/g
+const esiVarsRegex = /(<esi:vars>)(.*?)(<\/esi:vars>)/gs
+const esiVarsPatternRegex = /\$\(([A-Z_]+){?([a-zA-Z.\-~_%0-9]*)}?\|?(?:([^\s)']+)|'([^')]+)')?\)/gs
+const esiGreaterArrow = /</g
+const esiLessArrow = />/g
 
 
-export async function process(eventData: ESIEventData, chunk: string) {
+export async function process(eventData: ESIEventData, chunk: string): Promise<string> {
 	if (chunk.indexOf("esi:vars") == -1) {
 		return chunk
 	}
@@ -19,19 +19,19 @@ export async function process(eventData: ESIEventData, chunk: string) {
 	})
 }
 
-type replaceFunction = (eventData: ESIEventData, var_match: [String: string, ...args: any[]]) => string;
+type replaceFunction = (eventData: ESIEventData, var_match: [String: string, ...args: string[]]) => string;
 
-export function replace_vars(eventData: ESIEventData, str: string, cb?: replaceFunction) {
-	let rcb = cb ? cb : esi_eval_var;
+export function replace_vars(eventData: ESIEventData, str: string, cb?: replaceFunction): string {
+	const rcb = cb ? cb : esi_eval_var;
 
 	return str.replace(esiVarsPatternRegex, function (...match) {
 		return rcb(eventData, match)
 	})
 }
 
-export function esi_eval_var(eventData: ESIEventData, var_match: [String: string, ...args: any[]]) {
+export function esi_eval_var(eventData: ESIEventData, var_match: [String: string, ...args: string[]]): string {
 	let escape = true
-	let var_name = var_match[1]
+	const var_name = var_match[1]
 	if (var_name.substring(0, 4) == 'RAW_') {
 		escape = false
 		var_match[1] = var_name.substring(4)
@@ -49,14 +49,14 @@ export function esi_eval_var(eventData: ESIEventData, var_match: [String: string
 }
 
 
-function _esi_eval_var(eventData: ESIEventData, var_pattern: [String: string, ...args: any[]]): string {
-	let var_name = var_pattern[1] || ""
-	let key = var_pattern[2] == "" ? null : var_pattern[2];
+function _esi_eval_var(eventData: ESIEventData, var_pattern: [String: string, ...args: string[]]): string {
+	const var_name = var_pattern[1] || ""
+	const key = var_pattern[2] == "" ? null : var_pattern[2];
 
-	let default_var = var_pattern[3] || var_pattern[4] || ""
+	const default_var = var_pattern[3] || var_pattern[4] || ""
 
 	if (var_name == "QUERY_STRING") {
-		var queryString = eventData.url.searchParams
+		const queryString = eventData.url.searchParams
 		if (!key) {
 			// no key
 			// Return it all we have a query string
@@ -69,15 +69,26 @@ function _esi_eval_var(eventData: ESIEventData, var_pattern: [String: string, ..
 			return queryString.getAll(key).join(", ")
 		} else { return default_var }
 	} else if (var_name.substring(0, 5) == "HTTP_") {
-		let headers = eventData.headers
-		let header = var_name.substring(5)
+		const headers = eventData.headers
+		const header = var_name.substring(5)
 		if (header == "COOKIE") {
-
+			const cookies = parse(headers[header] || "")
 			if (key) {
-				let cookies = parse(headers[header] || "")
-				return cookies[key] || default_var
+				if (eventData.config.varsCookieBlacklist && eventData.config.varsCookieBlacklist.includes(key)) {
+					return ""
+				} else {
+					return cookies[key] || default_var
+				}
 			}
-			return headers[header] || ""
+			const res = []
+			// Only include our non black listed ones
+			for (const cookie in cookies) {
+				if (eventData.config.varsCookieBlacklist && eventData.config.varsCookieBlacklist.includes(cookie)) {
+					continue
+				}
+				res.push(`${cookie}=${cookies[cookie]}`)
+			}
+			return res.join("; ")
 
 		} else {
 
@@ -85,7 +96,7 @@ function _esi_eval_var(eventData: ESIEventData, var_pattern: [String: string, ..
 				return default_var
 			}
 			if (header == "ACCEPT_LANGUAGE" && key && headers[header]) {
-				let laguageExists = headers[header].search(key) > -1
+				const laguageExists = headers[header].search(key) > -1
 
 				// return them as strings not bools
 				return laguageExists ? "true" : "false";
@@ -94,7 +105,7 @@ function _esi_eval_var(eventData: ESIEventData, var_pattern: [String: string, ..
 			}
 		}
 	} else if (var_name == "ESI_ARGS") {
-		let esiArgs = eventData.esiArgs
+		const esiArgs = eventData.esiArgs
 		if (esiArgs.toString() == "") {
 			return default_var
 		}
