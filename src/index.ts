@@ -74,19 +74,22 @@ export class esi {
     }
 
     // grab the response from the upstream
-    let response = await fetch(esiVarsRequest);
+    const response = await fetch(esiVarsRequest);
 
-    // Responses without bodies can just be returned as is
-    if (!response.body) {
+    // We can always return if any of the following
+    // * Responses without bodies
+    // * Responses that aren't an allowed content type
+    // * Responses with Surrogate-Control is outside of our support
+    if (!response.body || this.#disallowedContentType(response) || !this.#checkSurrogateControl(response)) {
       return response;
     }
 
-    let { readable, writable } = new TransformStream();
+    const { readable, writable } = new TransformStream();
 
     // Create mutable response to return to the client, using the readable
     // side of the `TransformStream` as the body. As we write to the
     // writable side, this response will read from it.
-    let mutResponse = new Response(readable, response);
+    const mutResponse = new Response(readable, response);
 
     // Zero downstream lifetime
     mutResponse.headers.set("Cache-Control", "private, max-age=0");
@@ -121,21 +124,21 @@ export class esi {
 
     return text
   }
-
   async #handleTEXT(eventData: ESIEventData, text: string): Promise<string> {
     return text
   }
 
-  async #streamBody(eventData: ESIEventData, readable: ReadableStream, writable: WritableStream) {
+  async #streamBody(eventData: ESIEventData, readable: ReadableStream, writable: WritableStream): Promise<void> {
 
-    let reader = readable.getReader();
-
-    let encoder = new TextEncoder();
-    let decoder = new TextDecoder();
+    const reader = readable.getReader();
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
     // Output
     // pending actions awaiting a response
-    var output: Array<Promise<string>> = [], pending: boolean, ended: boolean;
+    const output: Array<Promise<string>> = []
+    let pending: boolean
+    let ended: boolean
 
     async function flush_output() {
 
@@ -150,7 +153,7 @@ export class esi {
       // Loop through the pending list
       if (output.length) {
 
-        var esi = output[0];
+        const esi = output[0];
 
         esi.then(null, function (e) {
 
@@ -161,7 +164,7 @@ export class esi {
 
         }).then(function (r) {
 
-          let writer = writable.getWriter();
+          const writer = writable.getWriter();
           writer.write(encoder.encode(r));
           output.shift();
           pending = false;
@@ -174,36 +177,34 @@ export class esi {
 
       if (ended && output.length === 0) {
 
-        let writer = writable.getWriter();
+        const writer = writable.getWriter();
         await writer.close();
 
       }
     }
 
-    async function writer(text: string, esi: boolean) {
+    const writer = (text: string, esi: boolean) => {
       if (esi) {
-        // @ts-ignore
         output.push(this.#handleESI(eventData, text))
       } else {
-        // @ts-ignore
         output.push(this.#handleTEXT(eventData, text))
       }
       flush_output()
     }
 
     // bind this so we can still see outside within the reader function
-    let writerBound = writer.bind(this);
+    const writerBound = writer.bind(this);
 
 
-    let handler = createHandleChunk(writerBound)
+    const handler = createHandleChunk(writerBound)
 
     reader.read().then(async function processBlob(blob): Promise<void> {
 
-      let chunk: ArrayBuffer = blob.value;
-      let done: boolean = blob.done;
+      const chunk: ArrayBuffer = blob.value;
+      const done: boolean = blob.done;
 
       // decode it
-      let decodedChunk: string = decoder.decode(chunk, { stream: true })
+      const decodedChunk: string = decoder.decode(chunk, { stream: true })
       await handler({ value: decodedChunk, done: done })
 
       // we're done bail out
@@ -219,12 +220,39 @@ export class esi {
     });
   }
 
-};
+  #disallowedContentType(response: Response): boolean {
+    const resType = response.headers.get('Content-Type')
+    if (resType) {
+      for (const allowedType of this.#options.contentTypes as string[]) {
+        let sep: number | undefined = resType.search(";")
+        if (sep === -1) sep = undefined
+        if (resType.substring(0, sep) === allowedType) {
+          return false
+        }
+      }
+    }
+    return true
+  }
 
+  #checkSurrogateControl(response: Response): boolean {
+    const sControl = response.headers.get('Surrogate-Control')
+    if (!sControl) {
+      return false
+    }
+    // we only support 1.0 at present
+    const version = /content="ESI\/([0-1].\d)"/.exec(sControl)
+    if (version && parseFloat(version[1]) <= 1.0) return true
+    return false
+  }
+}
 
-let esiArgsRegex = /^esi_(\S+)/
+//
+// Return
+// Pass in variables into ESI which identifies the request
+//
+const esiArgsRegex = /^esi_(\S+)/
 async function getVars(request: Request): Promise<[Request, ESIVars]> {
-  var vars: ESIVars = {
+  const vars: ESIVars = {
     headers: {},
     method: request.method,
     esiArgs: new URLSearchParams(),
@@ -232,13 +260,13 @@ async function getVars(request: Request): Promise<[Request, ESIVars]> {
   };
 
   let hasEsiVars = false
-  let current = new URL(request.url);
+  const current = new URL(request.url);
 
-  for (var key of current.searchParams.keys()) {
-    let match = key.match(esiArgsRegex);
+  for (const key of current.searchParams.keys()) {
+    const match = key.match(esiArgsRegex);
     if (match && match[1]) {
       hasEsiVars = true
-      for (var entry of current.searchParams.getAll(key)) {
+      for (const entry of current.searchParams.getAll(key)) {
         // have to append each entry seperatrely
         // trying to push an array results in sanatised arguments
         vars.esiArgs.append(match[1], entry)
@@ -251,9 +279,8 @@ async function getVars(request: Request): Promise<[Request, ESIVars]> {
   vars.url = current
 
   // Make them match the nice standard they we have
-  for (var header of request.headers.entries()) {
-    let t = header[0].replace(/\-/g, '_').toUpperCase();
-    vars.headers[header[0].replace(/\-/g, '_').toUpperCase()] = header[1]
+  for (const header of request.headers.entries()) {
+    vars.headers[header[0].replace(/-/g, '_').toUpperCase()] = header[1]
   }
 
   // Create a new request without the ESI Args
