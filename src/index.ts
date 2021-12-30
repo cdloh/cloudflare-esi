@@ -2,6 +2,8 @@ import { create as createHandleChunk } from "./handleChunk";
 import { process as processEscaping } from "./processEscaping";
 import { process as processComments } from "./processComments";
 import { process as processRemove } from "./processRemove";
+import { process as processESIVars } from "./processESIVars";
+
 
 export type ESIVars = {
   headers: { [key: string]: string };
@@ -80,7 +82,7 @@ export class esi {
     text = await processEscaping(text)
     text = await processComments(text)
     text = await processRemove(text)
-
+    text = await processESIVars(eventData, text)
     return text
   }
 
