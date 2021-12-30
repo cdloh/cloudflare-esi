@@ -3,6 +3,7 @@ import { process as processEscaping } from "./processEscaping";
 import { process as processComments } from "./processComments";
 import { process as processRemove } from "./processRemove";
 import { process as processESIVars } from "./processESIVars";
+import { process as processConditionals } from "./processConditionals";
 
 
 export type ESIVars = {
@@ -83,6 +84,8 @@ export class esi {
     text = await processComments(text)
     text = await processRemove(text)
     text = await processESIVars(eventData, text)
+    let vars = false;
+    [text, vars] = await processConditionals(eventData, text)
     return text
   }
 
