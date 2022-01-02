@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { tagParser } from "./tagParser";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function create(writer: Function) {
+type writerFunction = (text: string, esi: boolean) => void;
+type handleFunction = (value: string, done: boolean) => Promise<void>;
+
+export function create(writer: writerFunction): handleFunction {
   let tag_hint: string | null;
   let prev_chunk = "";
 
-  return async function ({ value, done }: { value: string; done: boolean }) {
+  return async function (value: string, done: boolean): Promise<void> {
     if (tag_hint) {
       value = tag_hint + value;
       tag_hint = null;

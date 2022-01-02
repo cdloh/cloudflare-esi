@@ -196,10 +196,9 @@ export class esi {
     reader.read().then(async function processBlob(blob): Promise<void> {
       const chunk: ArrayBuffer = blob.value;
       const done: boolean = blob.done;
-
       // decode it
       const decodedChunk: string = decoder.decode(chunk, { stream: true });
-      await handler({ value: decodedChunk, done: done });
+      await handler(decodedChunk, done);
 
       // we're done bail out
       if (done) {

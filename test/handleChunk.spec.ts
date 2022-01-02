@@ -7,7 +7,7 @@ test("Writes a chunk with no esi", async () => {
     expect(string).toEqual(testString);
   };
   const handleChunk = createHandleChunk(writer);
-  handleChunk({ value: testString, done: false });
+  handleChunk(testString, false);
 });
 
 test("Writes the before of a chunk with ESI but not a whole tag", async () => {
@@ -17,7 +17,7 @@ test("Writes the before of a chunk with ESI but not a whole tag", async () => {
     expect(string).toEqual("BEFORE TEXT");
   };
   const handleChunk = createHandleChunk(writer);
-  handleChunk({ value: testString, done: false });
+  handleChunk(testString, false);
 });
 
 test("Writes the before of a chunk with ESI, then prints the ESI tag and after data", async () => {
@@ -39,7 +39,7 @@ test("Writes the before of a chunk with ESI, then prints the ESI tag and after d
     }
   };
   const handleChunk = createHandleChunk(writer);
-  await handleChunk({ value: testString, done: false });
+  await handleChunk(testString, false);
   expect(write).toEqual(3);
 });
 
@@ -63,8 +63,8 @@ test("Writes the before of a chunk with ESI, then prints the ESI tag and after d
     }
   };
   const handleChunk = createHandleChunk(writer);
-  await handleChunk({ value: testString1, done: false });
-  await handleChunk({ value: testString2, done: false });
+  await handleChunk(testString1, false);
+  await handleChunk(testString2, false);
   expect(write).toEqual(3);
 });
 
@@ -88,9 +88,9 @@ test("ESI Hints should work", async () => {
     }
   };
   const handleChunk = createHandleChunk(writer);
-  await handleChunk({ value: testString1, done: false });
-  await handleChunk({ value: testString2, done: false });
-  await handleChunk({ value: "AFTER TEXT", done: false });
+  await handleChunk(testString1, false);
+  await handleChunk(testString2, false);
+  await handleChunk("AFTER TEXT", false);
   expect(write).toEqual(3);
 });
 
@@ -111,7 +111,7 @@ test("Should print our full chunk even if it doesn't complete", async () => {
     }
   };
   const handleChunk = createHandleChunk(writer);
-  await handleChunk({ value: testString1, done: false });
-  await handleChunk({ value: testString2, done: true });
+  await handleChunk(testString1, false);
+  await handleChunk(testString2, true);
   expect(write).toEqual(2);
 });
