@@ -77,8 +77,8 @@ export class esi {
     // * Responses with Surrogate-Control is outside of our support
     if (
       !response.body ||
-      this.#disallowedContentType(response) ||
-      !this.#checkSurrogateControl(response)
+      !this.#validContentType(response) ||
+      !this.#validSurrogateControl(response)
     ) {
       return response;
     }
@@ -211,21 +211,21 @@ export class esi {
     });
   }
 
-  #disallowedContentType(response: Response): boolean {
+  #validContentType(response: Response): boolean {
     const resType = response.headers.get("Content-Type");
     if (resType) {
       for (const allowedType of this.#options.contentTypes as string[]) {
         let sep: number | undefined = resType.search(";");
         if (sep === -1) sep = undefined;
         if (resType.substring(0, sep) === allowedType) {
-          return false;
+          return true;
         }
       }
     }
-    return true;
+    return false;
   }
 
-  #checkSurrogateControl(response: Response): boolean {
+  #validSurrogateControl(response: Response): boolean {
     const sControl = response.headers.get("Surrogate-Control");
     if (!sControl) {
       return false;
