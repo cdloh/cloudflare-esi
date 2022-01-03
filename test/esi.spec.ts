@@ -330,42 +330,37 @@ test("TEST 6: Include multiple fragments, in correct order.", async () => {
 // Not sure if we're going to have this option
 test.todo("TEST 7: Leave instructions intact if ESI is not enabled.");
 
-// test("TEST 7b: Leave instructions intact if ESI delegation is enabled - slow path.", async () => {
-// 	let url = `/esi/test-7b`
-// 	// set surrogate up
-// 	config.allowSurrogateDelegation = true
-// 	routeHandler.add(url, function (req, res) {
-// 		res.writeHead(200, esiHead);
-// 		res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`)
-// 	})
-// 	let res = await makeRequest(url, { headers: { "Surrogate-Capability": `localhost="ESI/1.0"` } });
-// 	expect(res.ok).toBeTruthy()
-// 	expect(checkSurrogate(res)).toBeFalsy()
-// 	expect(await res.text()).toEqual(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
-// });
+// Ready just do not have this functionality yet
+test.skip("TEST 7b: Leave instructions intact if ESI delegation is enabled - slow path.", async () => {
+  let url = `/esi/test-7b`
+  // set surrogate up
+  config.allowSurrogateDelegation = true
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`)
+  })
+  let res = await makeRequest(url, { headers: { "Surrogate-Capability": `localhost="ESI/1.0"` } });
+  expect(res.ok).toBeTruthy()
+  expect(checkSurrogate(res)).toBeFalsy()
+  expect(await res.text()).toEqual(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
+});
 
-test.todo(
-  "TEST 7b: Leave instructions intact if ESI delegation is enabled - slow path."
-);
 test.todo(
   "TEST 7c: Leave instructions intact if ESI delegation is enabled - fast path"
 );
-test.todo(
-  "TEST 7d: Leave instructions intact if ESI delegation is enabled by IP on the slow path"
-);
 
-// test("TEST 7d: Leave instructions intact if ESI delegation is enabled by IP on the slow path.", async () => {
-// 	let url = `/esi/test-7d`
-// 	config.allowSurrogateDelegation = ['127.0.0.1']
-// 	routeHandler.add(url, function (req, res) {
-// 		res.writeHead(200, esiHead);
-// 		res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`)
-// 	})
-// 	let res = await makeRequest(url, { headers: { "Surrogate-Capability": `localhost="ESI/1.0"` } });
-// 	expect(res.ok).toBeTruthy()
-// 	expect(checkSurrogate(res)).toBeFalsy()
-// 	expect(await res.text()).toEqual(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
-// });
+test.skip("TEST 7d: Leave instructions intact if ESI delegation is enabled by IP on the slow path.", async () => {
+  let url = `/esi/test-7d`
+  config.allowSurrogateDelegation = ['127.0.0.1']
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`)
+  })
+  let res = await makeRequest(url, { headers: { "Surrogate-Capability": `localhost="ESI/1.0"` } });
+  expect(res.ok).toBeTruthy()
+  expect(checkSurrogate(res)).toBeFalsy()
+  expect(await res.text()).toEqual(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
+});
 
 test.todo(
   "TEST 7e: Leave instructions intact if ESI delegation is enabled by IP on the fast path."
@@ -386,7 +381,7 @@ test("TEST 7f: Leave instructions intact if allowed types does not match on the 
 });
 
 test.todo(
-  "TEST 7f: Leave instructions intact if allowed types does not match on the fast path."
+  "TEST 7g: Leave instructions intact if allowed types does not match (fast path)"
 );
 
 test("TEST 8: Response downstrean cacheability is zeroed when ESI processing", async () => {
@@ -457,6 +452,8 @@ test("TEST 9: Variable evaluation", async () => {
   );
 });
 
+test.skip("TEST 9: Variable evaluation (defaults)", async () => { });
+
 test("TEST 9b: Multiple Variable evaluation", async () => {
   const url = `/esi/test-9b`;
   routeHandler.add(`${url}?t=1`, function (req, res) {
@@ -483,7 +480,7 @@ test("TEST 9b: Multiple Variable evaluation", async () => {
   );
 });
 
-test("TEST 9c: Dictionary variable syntax", async () => {
+test("TEST 9c: Dictionary variable syntax (cookie)", async () => {
   const url = `/esi/test-9c`;
   routeHandler.add(`${url}?t=1`, function (req, res) {
     res.writeHead(200, esiHead);
@@ -534,8 +531,33 @@ test("TEST 9d: List variable syntax (accept-language)", async () => {
   expect(await res.text()).toEqual(`FRAGMENT: ?1&en-gb=true&de=false`);
 });
 
-test.todo(
-  "TEST 9e: List variable syntax (accept-language) with multiple headers"
+test("TEST 9e: List variable syntax (accept-language) with multiple headers", async () => {
+  const url = `/esi/test-9e`;
+  routeHandler.add(`${url}?t=1`, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(
+      `<esi:include src="${url}/fragment1d?$(QUERY_STRING{t})&en-gb=$(HTTP_ACCEPT_LANGUAGE{en-gb})&de=$(HTTP_ACCEPT_LANGUAGE{de})" />`
+    );
+  });
+  routeHandler.add(
+    `${url}/fragment1d?1&en-gb=true&de=false`,
+    function (req, res) {
+      const url = new URL(req.url as string, testingDetails.url);
+      res.writeHead(200, esiHead);
+      res.end(`FRAGMENT: ${url.search}`);
+    }
+  );
+
+  const res = await makeRequest(`${url}?t=1`, {
+    // @ts-ignore
+    headers: {
+      "Accept-Language": ["da, en-gb", "fr"],
+    },
+  });
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`FRAGMENT: ?1&en-gb=true&de=false`);
+}
 );
 
 test("TEST 9f: Default variable values", async () => {
@@ -558,7 +580,37 @@ test("TEST 9f: Default variable values", async () => {
   );
 });
 
-test.todo("TEST 9g: Custom variable injection");
+test.skip("TEST 9g: Custom variable injection", async () => {
+  let url = `/esi/test-9g`
+  // set custom varibles up
+  // config.customESIVariables = function(request){
+  //   return {
+  //     "CUSTOM_DICTIONARY": {"a": "1", "b": "2"},
+  //     "CUSTOM_STRING": "foo"
+  //   }
+  // }
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.write("<esi:vars>")
+    res.say("$(CUSTOM_DICTIONARY|novalue)")
+    res.say("$(CUSTOM_DICTIONARY{a})")
+    res.say("$(CUSTOM_DICTIONARY{b})")
+    res.say("$(CUSTOM_DICTIONARY{c}|novalue)")
+    res.say("$(CUSTOM_STRING)")
+    res.say("$(CUSTOM_STRING{x}|novalue)")
+    res.end("</esi:vars>")
+  })
+  let res = await makeRequest(url);
+  expect(res.ok).toBeTruthy()
+  expect(checkSurrogate(res)).toBeFalsy()
+  expect(await res.text()).toEqual(`novalue
+1
+2
+novalue
+foo
+novalue`);
+});
+
 test.todo("TEST 10: Prime ESI in cache");
 test.todo("TEST 10b: ESI still runs on cache HIT.");
 test.todo("TEST 10c: ESI still runs on cache revalidation, upstream 200.");
@@ -590,6 +642,7 @@ test('TEST 11c: Include fragment with " H" in URI', async () => {
 });
 
 test.todo("TEST 11d: Use callback feature to modify fragment request params");
+
 test.todo("TEST 12: ESI processed over buffer larger than buffer_size.");
 test.todo(
   "TEST 12b: Incomplete ESI tag opening at the end of buffer (lookahead)"
@@ -793,7 +846,7 @@ Failed
 `);
 });
 
-// We cant check the error log here. But it'd be handy if we could....
+// TODO grab the console.log by overwriting the function here
 test("17b: Lexer complains about unparseable conditions", async () => {
   const content = `<esi:choose>
 <esi:when test="'hello' 'there'">OK</esi:when>
@@ -857,9 +910,35 @@ test("TEST 19b: No Surrogate-Control leaves instructions.", async () => {
   expect(await res.text()).toEqual(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
 });
 
-test.todo("TEST 20: Test we advertise Surrogate-Capability");
+test.skip("TEST 20: Test we advertise Surrogate-Capability", async () => {
+  const url = `/esi/test-20`;
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(
+      req.headers["Surrogate-Capability"]
+    );
+  });
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toMatch(/^(.*)="ESI\/1.0"$/)
+});
+
 test.todo("TEST 20b: Surrogate-Capability using visible_hostname");
-test.todo("TEST 21: Test Surrogate-Capability is appended when needed");
+
+test.skip("TEST 21: Test Surrogate-Capability is appended when needed", async () => {
+  const url = `/esi/test-20`;
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(
+      req.headers["Surrogate-Capability"]
+    );
+  });
+  const res = await makeRequest(url, { headers: { "Surrogate-Capability": `abc="ESI/0.8"` } });
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toMatch(/^abc="ESI\/0.8", (.*)="ESI\/1.0"$/)
+});
 
 test("TEST 22: Test comments are removed.", async () => {
   const url = `/esi/test-22?a=1`;
@@ -905,6 +984,7 @@ test.todo(
   "TEST 23b: Surrogate-Control removed when ESI enabled but no work needed (fast path)"
 );
 
+// TODO add error log here
 test("TEST 24: Fragment recursion limit", async () => {
   const url = `/esi/test-24`;
   routeHandler.add(
@@ -933,6 +1013,7 @@ test("TEST 24: Fragment recursion limit", async () => {
   );
 });
 
+// TODO add error log here
 test("TEST 24b: Lower fragment recursion limit", async () => {
   const url = `/esi/test-24b`;
   config.recursionLimit = 5;
@@ -1202,10 +1283,41 @@ test("TEST 32: Tag parsing boundaries", async () => {
   expect(await res.text()).toEqual(`BEFORE CONTENT\na\nOK\nAFTER CONTENT\n`);
 });
 
-test.todo("TEST 33: Invalid Surrogate-Capability header is ignored");
-test.todo(
-  "TEST 34: Leave instructions intact if surrogate-capability does not match http host"
-);
+test.skip("TEST 33: Invalid Surrogate-Capability header is ignored", async () => {
+  const url = `/esi/test-33?foo=bar`;
+  config.allowSurrogateDelegation = true
+  parser = new esi(config)
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
+  });
+  const res = await makeRequest(url, {
+    headers: {
+      "Surrogate-Capability": `localhost=ESI/1foo`
+    }
+  });
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`foo=bar`);
+});
+
+test.skip("TEST 34: Leave instructions intact if surrogate-capability does not match http host", async () => {
+  const url = `/esi/test-34?a=1`;
+  config.allowSurrogateDelegation = true
+  parser = new esi(config)
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
+  });
+  const res = await makeRequest(url, {
+    headers: {
+      "Surrogate-Capability": `esi.example.com="ESI/1.0"`
+    }
+  });
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeFalsy();
+  expect(await res.text()).toEqual(`<esi:vars>$(QUERY_STRING)</esi:vars`);
+});
 
 // confirm this one
 test("TEST 35: ESI_ARGS instruction with no args in query string reach the origin", async () => {
