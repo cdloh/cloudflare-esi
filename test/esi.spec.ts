@@ -723,6 +723,10 @@ test("TEST 17: choose - when - test, conditional syntax", async () => {
     "'hello' != 'goodbye'",
     "'repeat' != 'function'", // use of lua words in strings
     "'repeat' != function", // use of lua words unquoted
+    "'exit()' == exit()", // use of lua words unquoted
+    "'process.exit()' == process.exit()", // use of lua words unquoted
+    "''(function(){process.exit()})()' == (function(){process.exit()})()", // use of lua words unquoted
+    "'(function(){console.log(`fdasfdsaf`)})()' == exit()", // use of lua words unquoted
     "' repeat sentence with function in it ' == ' repeat sentence with function in it '", // use of lua words in strings
     "$(QUERY_STRING{msg}) == 'hello'",
     `'string \\' escaping' == 'string \\' escaping'`,
@@ -767,6 +771,10 @@ test("TEST 17: choose - when - test, conditional syntax", async () => {
 'hello' == 'hello'
 'hello' != 'goodbye'
 'repeat' != 'function'
+Failed
+Failed
+Failed
+Failed
 Failed
 ' repeat sentence with function in it ' == ' repeat sentence with function in it '
 hello == 'hello'
