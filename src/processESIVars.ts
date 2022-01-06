@@ -132,7 +132,7 @@ function _esi_eval_var(
       return default_var;
     }
     if (!key) {
-      return esiArgs.toString() == "" ? default_var : esiArgs.toString();
+      return esiArgs.toString();
     } else {
       return esiArgs.has(key) ? esiArgs.getAll(key).join(", ") : default_var;
     }
