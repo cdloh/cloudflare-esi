@@ -332,16 +332,18 @@ test.todo("TEST 7: Leave instructions intact if ESI is not enabled.");
 
 // Ready just do not have this functionality yet
 test.skip("TEST 7b: Leave instructions intact if ESI delegation is enabled - slow path.", async () => {
-  let url = `/esi/test-7b`
+  let url = `/esi/test-7b`;
   // set surrogate up
-  config.allowSurrogateDelegation = true
+  config.allowSurrogateDelegation = true;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
-    res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`)
-  })
-  let res = await makeRequest(url, { headers: { "Surrogate-Capability": `localhost="ESI/1.0"` } });
-  expect(res.ok).toBeTruthy()
-  expect(checkSurrogate(res)).toBeFalsy()
+    res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
+  });
+  let res = await makeRequest(url, {
+    headers: { "Surrogate-Capability": `localhost="ESI/1.0"` },
+  });
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeFalsy();
   expect(await res.text()).toEqual(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
 });
 
@@ -350,15 +352,17 @@ test.todo(
 );
 
 test.skip("TEST 7d: Leave instructions intact if ESI delegation is enabled by IP on the slow path.", async () => {
-  let url = `/esi/test-7d`
-  config.allowSurrogateDelegation = ['127.0.0.1']
+  let url = `/esi/test-7d`;
+  config.allowSurrogateDelegation = ["127.0.0.1"];
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
-    res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`)
-  })
-  let res = await makeRequest(url, { headers: { "Surrogate-Capability": `localhost="ESI/1.0"` } });
-  expect(res.ok).toBeTruthy()
-  expect(checkSurrogate(res)).toBeFalsy()
+    res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
+  });
+  let res = await makeRequest(url, {
+    headers: { "Surrogate-Capability": `localhost="ESI/1.0"` },
+  });
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeFalsy();
   expect(await res.text()).toEqual(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
 });
 
@@ -452,7 +456,7 @@ test("TEST 9: Variable evaluation", async () => {
   );
 });
 
-test.skip("TEST 9: Variable evaluation (defaults)", async () => { });
+test.skip("TEST 9: Variable evaluation (defaults)", async () => {});
 
 test("TEST 9b: Multiple Variable evaluation", async () => {
   const url = `/esi/test-9b`;
@@ -557,8 +561,7 @@ test("TEST 9e: List variable syntax (accept-language) with multiple headers", as
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(`FRAGMENT: ?1&en-gb=true&de=false`);
-}
-);
+});
 
 test("TEST 9f: Default variable values", async () => {
   const url = `/esi/test-9f?a=1`;
@@ -569,6 +572,9 @@ test("TEST 9f: Default variable values", async () => {
     res.say("$(QUERY_STRING{b}|novalue)");
     res.say("$(QUERY_STRING{c}|'quoted values can have spaces')");
     res.say("$(QUERY_STRING{d}|unquoted values must not have spaces)");
+    res.say("$(HTTP_HEADER_DOESNT_EXIST|default_header)");
+    res.say("$(WHAT_AM_I|default_var)");
+    res.say("$(HTTP_COOKIE{d}|default)");
     res.end("</esi:vars>");
   });
 
@@ -576,12 +582,27 @@ test("TEST 9f: Default variable values", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `1\nnovalue\nquoted values can have spaces\n$(QUERY_STRING{d}|unquoted values must not have spaces)\n`
+    `1\nnovalue\nquoted values can have spaces\n$(QUERY_STRING{d}|unquoted values must not have spaces)\ndefault_header\ndefault_var\ndefault\n`
   );
 });
 
-test.skip("TEST 9g: Custom variable injection", async () => {
-  let url = `/esi/test-9g`
+test("TEST 9g: Default variable values no query string", async () => {
+  const url = `/esi/test-9g`;
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.write("<esi:vars>");
+    res.say("$(QUERY_STRING|novalue)");
+    res.end("</esi:vars>");
+  });
+
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`novalue\n`);
+});
+
+test.skip("TEST 9h: Custom variable injection", async () => {
+  let url = `/esi/test-9h`;
   // set custom varibles up
   // config.customESIVariables = function(request){
   //   return {
@@ -591,18 +612,18 @@ test.skip("TEST 9g: Custom variable injection", async () => {
   // }
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
-    res.write("<esi:vars>")
-    res.say("$(CUSTOM_DICTIONARY|novalue)")
-    res.say("$(CUSTOM_DICTIONARY{a})")
-    res.say("$(CUSTOM_DICTIONARY{b})")
-    res.say("$(CUSTOM_DICTIONARY{c}|novalue)")
-    res.say("$(CUSTOM_STRING)")
-    res.say("$(CUSTOM_STRING{x}|novalue)")
-    res.end("</esi:vars>")
-  })
+    res.write("<esi:vars>");
+    res.say("$(CUSTOM_DICTIONARY|novalue)");
+    res.say("$(CUSTOM_DICTIONARY{a})");
+    res.say("$(CUSTOM_DICTIONARY{b})");
+    res.say("$(CUSTOM_DICTIONARY{c}|novalue)");
+    res.say("$(CUSTOM_STRING)");
+    res.say("$(CUSTOM_STRING{x}|novalue)");
+    res.end("</esi:vars>");
+  });
   let res = await makeRequest(url);
-  expect(res.ok).toBeTruthy()
-  expect(checkSurrogate(res)).toBeFalsy()
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeFalsy();
   expect(await res.text()).toEqual(`novalue
 1
 2
@@ -914,14 +935,12 @@ test.skip("TEST 20: Test we advertise Surrogate-Capability", async () => {
   const url = `/esi/test-20`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
-    res.end(
-      req.headers["Surrogate-Capability"]
-    );
+    res.end(req.headers["Surrogate-Capability"]);
   });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
-  expect(await res.text()).toMatch(/^(.*)="ESI\/1.0"$/)
+  expect(await res.text()).toMatch(/^(.*)="ESI\/1.0"$/);
 });
 
 test.todo("TEST 20b: Surrogate-Capability using visible_hostname");
@@ -930,14 +949,14 @@ test.skip("TEST 21: Test Surrogate-Capability is appended when needed", async ()
   const url = `/esi/test-20`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
-    res.end(
-      req.headers["Surrogate-Capability"]
-    );
+    res.end(req.headers["Surrogate-Capability"]);
   });
-  const res = await makeRequest(url, { headers: { "Surrogate-Capability": `abc="ESI/0.8"` } });
+  const res = await makeRequest(url, {
+    headers: { "Surrogate-Capability": `abc="ESI/0.8"` },
+  });
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
-  expect(await res.text()).toMatch(/^abc="ESI\/0.8", (.*)="ESI\/1.0"$/)
+  expect(await res.text()).toMatch(/^abc="ESI\/0.8", (.*)="ESI\/1.0"$/);
 });
 
 test("TEST 22: Test comments are removed.", async () => {
@@ -1285,16 +1304,16 @@ test("TEST 32: Tag parsing boundaries", async () => {
 
 test.skip("TEST 33: Invalid Surrogate-Capability header is ignored", async () => {
   const url = `/esi/test-33?foo=bar`;
-  config.allowSurrogateDelegation = true
-  parser = new esi(config)
+  config.allowSurrogateDelegation = true;
+  parser = new esi(config);
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
   });
   const res = await makeRequest(url, {
     headers: {
-      "Surrogate-Capability": `localhost=ESI/1foo`
-    }
+      "Surrogate-Capability": `localhost=ESI/1foo`,
+    },
   });
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
@@ -1303,16 +1322,16 @@ test.skip("TEST 33: Invalid Surrogate-Capability header is ignored", async () =>
 
 test.skip("TEST 34: Leave instructions intact if surrogate-capability does not match http host", async () => {
   const url = `/esi/test-34?a=1`;
-  config.allowSurrogateDelegation = true
-  parser = new esi(config)
+  config.allowSurrogateDelegation = true;
+  parser = new esi(config);
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
   });
   const res = await makeRequest(url, {
     headers: {
-      "Surrogate-Capability": `esi.example.com="ESI/1.0"`
-    }
+      "Surrogate-Capability": `esi.example.com="ESI/1.0"`,
+    },
   });
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeFalsy();
