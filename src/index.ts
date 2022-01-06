@@ -5,6 +5,7 @@ import { process as processRemove } from "./processRemove";
 import { process as processESIVars } from "./processESIVars";
 import { process as processConditionals } from "./processConditionals";
 import { process as processIncludes } from "./processIncludes";
+import { advertiseSurrogateControl } from "./surrogate";
 
 export type ESIConfig = {
   enabled?: boolean;
@@ -45,7 +46,7 @@ export class esi {
     this.#options = { ...defaultConfig, ...options };
   }
 
-  async parse(request: Request, recursion = 0): Promise<Response> {
+  async parse(origRequest: Request, recursion = 0): Promise<Response> {
     // Hit our limit? Bail out
     const limit = this.#options.recursionLimit as number;
     if (recursion >= limit) {
@@ -55,7 +56,11 @@ export class esi {
     // Get our HTTP_VARS & ESI Vars
     // Remove ESI Vars if they're in the request
     // Return a new request
-    const [esiVarsRequest, esiVars] = await getVars(request);
+    // eslint-disable-next-line
+    let [request, esiVars] = await getVars(origRequest);
+
+    // Add SurrogateControl header or append to it
+    request = await advertiseSurrogateControl(request);
 
     // pack our nice stuff in
     const eventData: ESIEventData = {
@@ -64,12 +69,12 @@ export class esi {
       method: esiVars.method,
       esiArgs: esiVars.esiArgs,
       url: esiVars.url,
-      request: esiVarsRequest,
+      request: request,
       recursion: recursion,
     };
 
     // grab the response from the upstream
-    const response = await fetch(esiVarsRequest);
+    const response = await fetch(request);
 
     // We can always return if any of the following
     // * Responses without bodies

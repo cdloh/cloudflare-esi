@@ -254,7 +254,7 @@ test("TEST 5b: Test fragment always issues GET and only inherits correct req hea
   expect(checkSurrogate(res)).toBeTruthy();
   const text = await res.text();
   expect(text).toEqual(
-    `ORIGINAL METHOD: POST\nmethod: GET\nhost: localhost:${port}\nconnection: keep-alive\naccept: */*\naccept-encoding: gzip, deflate\naccept-language: *\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nsec-fetch-mode: cors\nuser-agent: undici\nx-esi-parent-uri: http://localhost:${port}/esi/test-5b\nx-esi-recursion-level: 1\n`
+    `ORIGINAL METHOD: POST\nmethod: GET\nhost: localhost:${port}\nconnection: keep-alive\naccept: */*\naccept-encoding: gzip, deflate\naccept-language: *\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nsec-fetch-mode: cors\nsurrogate-capability: cloudflareWorkerESI="ESI/1.0"\nuser-agent: undici\nx-esi-parent-uri: http://localhost:${port}/esi/test-5b\nx-esi-recursion-level: 1\n`
   );
 });
 
@@ -456,7 +456,7 @@ test("TEST 9: Variable evaluation", async () => {
   );
 });
 
-test.skip("TEST 9: Variable evaluation (defaults)", async () => {});
+test.skip("TEST 9: Variable evaluation (defaults)", async () => { });
 
 test("TEST 9b: Multiple Variable evaluation", async () => {
   const url = `/esi/test-9b`;
@@ -931,11 +931,11 @@ test("TEST 19b: No Surrogate-Control leaves instructions.", async () => {
   expect(await res.text()).toEqual(`<esi:vars>$(QUERY_STRING)</esi:vars>`);
 });
 
-test.skip("TEST 20: Test we advertise Surrogate-Capability", async () => {
+test("TEST 20: Test we advertise Surrogate-Capability (without COLO Data)", async () => {
   const url = `/esi/test-20`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
-    res.end(req.headers["Surrogate-Capability"]);
+    res.end(req.headers["surrogate-capability"]);
   });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
@@ -943,13 +943,24 @@ test.skip("TEST 20: Test we advertise Surrogate-Capability", async () => {
   expect(await res.text()).toMatch(/^(.*)="ESI\/1.0"$/);
 });
 
-test.todo("TEST 20b: Surrogate-Capability using visible_hostname");
-
-test.skip("TEST 21: Test Surrogate-Capability is appended when needed", async () => {
+test("TEST 20b: Test we advertise Surrogate-Capability (with COLO Data)", async () => {
   const url = `/esi/test-20`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
-    res.end(req.headers["Surrogate-Capability"]);
+    res.end(req.headers["surrogate-capability"]);
+  });
+  // @ts-expect-error Not going to fill out a whole Cloudflare object here
+  const res = await makeRequest(url, { cf: { colo: "DFW" } });
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toMatch(/^(.*)DFW="ESI\/1.0"$/);
+});
+
+test("TEST 21: Test Surrogate-Capability is appended when needed", async () => {
+  const url = `/esi/test-20`;
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(req.headers["surrogate-capability"]);
   });
   const res = await makeRequest(url, {
     headers: { "Surrogate-Capability": `abc="ESI/0.8"` },
@@ -1567,7 +1578,7 @@ test("TEST 45: Cookies and Authorization propagate to fragment on same domain", 
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `method: GET\nhost: ${testingDetails.hostname}:${testingDetails.port}\nconnection: keep-alive\naccept: */*\naccept-encoding: gzip, deflate\naccept-language: *\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nsec-fetch-mode: cors\nuser-agent: undici\nx-esi-parent-uri: http://localhost:${port}/esi/test-45\nx-esi-recursion-level: 1\n`
+    `method: GET\nhost: ${testingDetails.hostname}:${testingDetails.port}\nconnection: keep-alive\naccept: */*\naccept-encoding: gzip, deflate\naccept-language: *\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nsec-fetch-mode: cors\nsurrogate-capability: cloudflareWorkerESI="ESI/1.0"\nuser-agent: undici\nx-esi-parent-uri: http://localhost:${port}/esi/test-45\nx-esi-recursion-level: 1\n`
   );
 });
 
