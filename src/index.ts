@@ -150,7 +150,7 @@ export class esi {
     [text, vars] = await processConditionals(eventData, text);
 
     // finally our includes
-    text = await processIncludes(eventData, text, vars);
+    text = await processIncludes(eventData, text, vars, this.#esiFunction);
 
     return text;
   }

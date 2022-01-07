@@ -660,6 +660,48 @@ novalue
 `);
 });
 
+test("TEST 9i: Custom variable injection in fragment", async () => {
+  let url = `/esi/test-9i`;
+  // set custom varibles up
+  const customVaribles = async function (
+    request: Request
+  ): Promise<customESIVars> {
+    return {
+      CUSTOM_DICTIONARY: {
+        a: "1",
+        b: "2",
+      },
+      CUSTOM_STRING: "foo",
+    };
+  };
+  parser = new esi(config, customVaribles);
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(`<esi:include src="${url}/fragment_1" />`);
+  });
+  routeHandler.add(`${url}/fragment_1`, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.write("<esi:vars>");
+    res.say("$(CUSTOM_DICTIONARY|novalue)");
+    res.say("$(CUSTOM_DICTIONARY{a})");
+    res.say("$(CUSTOM_DICTIONARY{b})");
+    res.say("$(CUSTOM_DICTIONARY{c}|novalue)");
+    res.say("$(CUSTOM_STRING)");
+    res.say("$(CUSTOM_STRING{x}|novalue)");
+    res.end("</esi:vars>");
+  });
+  let res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`novalue
+1
+2
+novalue
+foo
+novalue
+`);
+});
+
 test.todo("TEST 10: Prime ESI in cache");
 test.todo("TEST 10b: ESI still runs on cache HIT.");
 test.todo("TEST 10c: ESI still runs on cache revalidation, upstream 200.");

@@ -1,5 +1,5 @@
 import { replace_vars } from "./processESIVars";
-import esi, { ESIConfig } from ".";
+import esi, { customESIVarsFunction, ESIConfig } from ".";
 import { ESIEventData } from ".";
 
 const esi_include_pattern = /<esi:include\s*src="[^"]+"\s*\/>/;
@@ -8,7 +8,8 @@ const esi_src_pattern = /src="([^"]+)"/;
 export async function process(
   eventData: ESIEventData,
   chunk: string,
-  evalVars: boolean
+  evalVars: boolean,
+  customESIFunction?: customESIVarsFunction
 ): Promise<string> {
   if (chunk.indexOf("<esi:include") == -1) {
     if (evalVars) {
@@ -31,7 +32,11 @@ export async function process(
       retFrom = includeMatch.index + includeMatch[0].length;
       res.push(evalVars ? replace_vars(eventData, before) : before);
 
-      const include = await fetchInclude(eventData, includeMatch[0]);
+      const include = await fetchInclude(
+        eventData,
+        includeMatch[0],
+        customESIFunction
+      );
 
       // Already escaped by the fetcher
       res.push(include);
@@ -47,7 +52,11 @@ export async function process(
   return res.join("");
 }
 
-async function fetchInclude(eventData: ESIEventData, include: string) {
+async function fetchInclude(
+  eventData: ESIEventData,
+  include: string,
+  customESIFunction?: customESIVarsFunction
+) {
   const src = parseSrcAttribute(eventData, include);
 
   if (!src) {
@@ -95,7 +104,7 @@ async function fetchInclude(eventData: ESIEventData, include: string) {
   }
 
   // create a new parser with current config
-  const parser = new esi(eventData.config);
+  const parser = new esi(eventData.config, customESIFunction);
   const includeRes = await parser.parse(req, eventData.recursion + 1);
 
   if (!includeRes.body) {
