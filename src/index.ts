@@ -5,7 +5,12 @@ import { process as processRemove } from "./processRemove";
 import { process as processESIVars } from "./processESIVars";
 import { process as processConditionals } from "./processConditionals";
 import { process as processIncludes } from "./processIncludes";
-import { advertiseSurrogateControl } from "./surrogate";
+import {
+  advertiseSurrogateControl,
+  canDelegateToSurrogate,
+  splitESIToken,
+} from "./surrogate";
+import { getheaderToken } from "./headerUtils";
 
 export type ESIConfig = {
   enabled?: boolean;
@@ -33,6 +38,8 @@ export type ESIEventData = {
   request: Request;
   recursion: number;
 };
+const processorToken = "ESI";
+const processorVersion = 1.0;
 
 export class esi {
   #options: ESIConfig;
@@ -80,10 +87,12 @@ export class esi {
     // * Responses without bodies
     // * Responses that aren't an allowed content type
     // * Responses with Surrogate-Control is outside of our support
+    // * We can delegate Surrogate downstream
     if (
       !response.body ||
       !this.#validContentType(response) ||
-      !this.#validSurrogateControl(response)
+      !this.#validSurrogateControl(response) ||
+      (await canDelegateToSurrogate(origRequest, this.#options))
     ) {
       return response;
     }
@@ -235,9 +244,16 @@ export class esi {
     if (!sControl) {
       return false;
     }
-    // we only support 1.0 at present
-    const version = /content="ESI\/([0-1].\d)"/.exec(sControl);
-    if (version && parseFloat(version[1]) <= 1.0) return true;
+    const esiToken = getheaderToken(sControl, "content");
+    const [surrogateProcessor, surrogateVersion] = splitESIToken(esiToken);
+    if (
+      surrogateVersion &&
+      surrogateVersion <= getProcessorVersion() &&
+      surrogateProcessor &&
+      surrogateProcessor == getProcessorToken()
+    ) {
+      return true;
+    }
     return false;
   }
 }
@@ -279,6 +295,18 @@ async function getVars(request: Request): Promise<[Request, ESIVars]> {
 
   // return a brand new
   return [new Request(current.toString(), request), vars];
+}
+
+export function getProcessorToken(): string {
+  return processorToken;
+}
+
+export function getProcessorVersion(): number {
+  return processorVersion;
+}
+
+export function getProcessorVersionString(): string {
+  return processorVersion.toFixed(1);
 }
 
 export default esi;
