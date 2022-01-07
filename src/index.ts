@@ -46,6 +46,10 @@ export type customESIVars = {
 export type customESIVarsFunction = (
   request: Request
 ) => Promise<customESIVars>;
+export type fetchFunction = (
+  request: string | Request,
+  requestInitr?: Request | RequestInit | undefined
+) => Promise<Response>;
 
 const processorToken = "ESI";
 const processorVersion = 1.0;
@@ -53,14 +57,20 @@ const processorVersion = 1.0;
 export class esi {
   #options: ESIConfig;
   #esiFunction?: customESIVarsFunction;
+  #fetcher: fetchFunction;
 
-  constructor(options?: ESIConfig, customESIFunction?: customESIVarsFunction) {
+  constructor(
+    options?: ESIConfig,
+    customESIFunction?: customESIVarsFunction,
+    fetcher = fetch
+  ) {
     const defaultConfig = {
       recursionLimit: 10,
       enabled: true,
       contentTypes: ["text/html", "text/plain"],
     };
     this.#options = { ...defaultConfig, ...options };
+    this.#fetcher = fetcher;
     if (customESIFunction) this.#esiFunction = customESIFunction;
   }
 
@@ -99,7 +109,7 @@ export class esi {
     };
 
     // grab the response from the upstream
-    const response = await fetch(request);
+    const response = await this.#fetcher(request);
 
     // We can always return if any of the following
     // * Responses without bodies
@@ -150,7 +160,13 @@ export class esi {
     [text, vars] = await processConditionals(eventData, text);
 
     // finally our includes
-    text = await processIncludes(eventData, text, vars, this.#esiFunction);
+    text = await processIncludes(
+      eventData,
+      text,
+      vars,
+      this.#fetcher,
+      this.#esiFunction
+    );
 
     return text;
   }
