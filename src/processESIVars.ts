@@ -137,6 +137,22 @@ function _esi_eval_var(
       return esiArgs.has(key) ? esiArgs.getAll(key).join(", ") : default_var;
     }
   } else {
+    const customVaribles = eventData.customVars;
+    if (customVaribles) {
+      const customVar = customVaribles[var_name];
+      if (customVar) {
+        if (key) {
+          if (typeof customVar == "object") {
+            return customVar[key] || default_var;
+          }
+        } else {
+          if (typeof customVar == "object") {
+            return default_var;
+          }
+          return customVar;
+        }
+      }
+    }
     return default_var;
   }
 }

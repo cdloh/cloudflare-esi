@@ -1,7 +1,7 @@
 import { urlHandler, checkSurrogate, testResponse } from "./helpers";
 import http from "http";
 import { AddressInfo } from "net";
-import { esi, ESIConfig } from "../src";
+import { customESIVars, esi, ESIConfig } from "../src";
 
 const esiHead = {
   "Content-Type": "text/html",
@@ -622,15 +622,21 @@ test("TEST 9g: Default variable values no query string", async () => {
   expect(await res.text()).toEqual(`novalue\n`);
 });
 
-test.skip("TEST 9h: Custom variable injection", async () => {
+test("TEST 9h: Custom variable injection", async () => {
   let url = `/esi/test-9h`;
   // set custom varibles up
-  // config.customESIVariables = function(request){
-  //   return {
-  //     "CUSTOM_DICTIONARY": {"a": "1", "b": "2"},
-  //     "CUSTOM_STRING": "foo"
-  //   }
-  // }
+  const customVaribles = async function (
+    request: Request
+  ): Promise<customESIVars> {
+    return {
+      CUSTOM_DICTIONARY: {
+        a: "1",
+        b: "2",
+      },
+      CUSTOM_STRING: "foo",
+    };
+  };
+  parser = new esi(config, customVaribles);
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.write("<esi:vars>");
@@ -644,13 +650,14 @@ test.skip("TEST 9h: Custom variable injection", async () => {
   });
   let res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
-  expect(checkSurrogate(res)).toBeFalsy();
+  expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(`novalue
 1
 2
 novalue
 foo
-novalue`);
+novalue
+`);
 });
 
 test.todo("TEST 10: Prime ESI in cache");

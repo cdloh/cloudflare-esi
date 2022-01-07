@@ -34,23 +34,34 @@ export type ESIEventData = {
   headers: { [key: string]: string };
   method: string;
   esiArgs: URLSearchParams;
+  customVars?: customESIVars;
   url: URL;
   request: Request;
   recursion: number;
 };
+
+export type customESIVars = {
+  [key: string]: string | { [key: string]: string };
+};
+export type customESIVarsFunction = (
+  request: Request
+) => Promise<customESIVars>;
+
 const processorToken = "ESI";
 const processorVersion = 1.0;
 
 export class esi {
   #options: ESIConfig;
+  #esiFunction?: customESIVarsFunction;
 
-  constructor(options?: ESIConfig) {
+  constructor(options?: ESIConfig, customESIFunction?: customESIVarsFunction) {
     const defaultConfig = {
       recursionLimit: 10,
       enabled: true,
       contentTypes: ["text/html", "text/plain"],
     };
     this.#options = { ...defaultConfig, ...options };
+    if (customESIFunction) this.#esiFunction = customESIFunction;
   }
 
   async parse(origRequest: Request, recursion = 0): Promise<Response> {
@@ -66,6 +77,12 @@ export class esi {
     // eslint-disable-next-line
     let [request, esiVars] = await getVars(origRequest);
 
+    // Load custom values if we can
+    let customESIVariables;
+    if (this.#esiFunction) {
+      customESIVariables = await this.#esiFunction(origRequest);
+    }
+
     // Add SurrogateControl header or append to it
     request = await advertiseSurrogateControl(request);
 
@@ -75,6 +92,7 @@ export class esi {
       headers: esiVars.headers,
       method: esiVars.method,
       esiArgs: esiVars.esiArgs,
+      customVars: customESIVariables,
       url: esiVars.url,
       request: request,
       recursion: recursion,
