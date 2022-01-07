@@ -55,7 +55,7 @@ export class esi {
 
     // Get our HTTP_VARS & ESI Vars
     // Remove ESI Vars if they're in the request
-    // Return a new request
+    // Return a brand new request
     // eslint-disable-next-line
     let [request, esiVars] = await getVars(origRequest);
 
@@ -255,13 +255,11 @@ async function getVars(request: Request): Promise<[Request, ESIVars]> {
     url: new URL(request.url),
   };
 
-  let hasEsiVars = false;
   const current = new URL(request.url);
 
   for (const key of current.searchParams.keys()) {
     const match = key.match(esiArgsRegex);
     if (match && match[1]) {
-      hasEsiVars = true;
       for (const entry of current.searchParams.getAll(key)) {
         // have to append each entry seperatrely
         // trying to push an array results in sanatised arguments
@@ -279,10 +277,8 @@ async function getVars(request: Request): Promise<[Request, ESIVars]> {
     vars.headers[header[0].replace(/-/g, "_").toUpperCase()] = header[1];
   }
 
-  // Create a new request without the ESI Args
-  if (hasEsiVars) request = new Request(current.toString(), request);
-
-  return [request, vars];
+  // return a brand new
+  return [new Request(current.toString(), request), vars];
 }
 
 export default esi;
