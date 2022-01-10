@@ -115,3 +115,25 @@ test("Should print our full chunk even if it doesn't complete", async () => {
   await handleChunk(testString2, true);
   expect(write).toEqual(2);
 });
+
+test("Should print our full chunk even if it's an imcomplete tag", async () => {
+  const testString1 = "BEFORE TEXT<esi";
+  const testString2 = ":foo>dfafdsafdsa";
+  let write = 0;
+  const writer = function (string: string, hasESI: boolean) {
+    write++;
+    if (write == 1) {
+      expect(hasESI).toBeFalsy();
+      expect(string).toEqual("BEFORE TEXT");
+    } else if (write == 2) {
+      expect(hasESI).toBeFalsy();
+      expect(string).toEqual("<esi:foo>dfafdsafdsa");
+    } else {
+      fail();
+    }
+  };
+  const handleChunk = createHandleChunk(writer);
+  await handleChunk(testString1, false);
+  await handleChunk(testString2, true);
+  expect(write).toEqual(2);
+});
