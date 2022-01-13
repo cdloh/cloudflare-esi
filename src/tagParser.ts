@@ -13,12 +13,12 @@ export type tag = {
 };
 
 export class tagParser {
-  #content: string;
-  #pos: number;
+  content: string;
+  pos: number;
 
   constructor(content: string, offset?: number) {
-    this.#content = content;
-    this.#pos = offset || 0;
+    this.content = content;
+    this.pos = offset || 0;
 
     this.next = this.next.bind(this);
   }
@@ -26,17 +26,17 @@ export class tagParser {
   async next(
     tagname?: string
   ): Promise<[tag | null, string | undefined, string | undefined]> {
-    const tag = await this.#findWholeTag(tagname);
+    const tag = await this.findWholeTag(tagname);
     let before, after;
 
     if (tag) {
-      before = this.#content.substring(this.#pos, tag.opening.from);
+      before = this.content.substring(this.pos, tag.opening.from);
       if (tag.closing) {
-        after = this.#content.substring(tag.closing.to + 1);
-        this.#pos = tag.closing.to + 1;
+        after = this.content.substring(tag.closing.to + 1);
+        this.pos = tag.closing.to + 1;
       } else {
-        after = this.#content.substring(tag.opening.to + 1);
-        this.#pos = tag.opening.to + 1;
+        after = this.content.substring(tag.opening.to + 1);
+        this.pos = tag.opening.to + 1;
       }
     }
 
@@ -69,8 +69,8 @@ export class tagParser {
     return new RegExp(`<\\/(${tag})\\s*>`);
   }
 
-  async #findWholeTag(tag?: string): Promise<tag | null> {
-    const markup = this.#content.slice(this.#pos);
+  async findWholeTag(tag?: string): Promise<tag | null> {
+    const markup = this.content.slice(this.pos);
 
     if (!tag) {
       tag = "(?:!--esi)|(?:esi:[a-z]+)";
@@ -90,8 +90,8 @@ export class tagParser {
 
     const ret: tag = {
       opening: {
-        from: open_pos + this.#pos,
-        to: open_pos_end + this.#pos,
+        from: open_pos + this.pos,
+        to: open_pos_end + this.pos,
         tag: matches[0],
       },
       tagname: matches[1],
@@ -142,8 +142,8 @@ export class tagParser {
       closing_f = search - matches[0].length;
 
       ret.closing = {
-        from: closing_f + this.#pos,
-        to: closing_t + this.#pos,
+        from: closing_f + this.pos,
+        to: closing_t + this.pos,
         tag: matches[0],
       };
       ret.contents = markup.substring(open_pos_end + 1, closing_f);

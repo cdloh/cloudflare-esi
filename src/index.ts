@@ -55,9 +55,9 @@ const processorToken = "ESI";
 const processorVersion = 1.0;
 
 export class esi {
-  #options: ESIConfig;
-  #esiFunction?: customESIVarsFunction;
-  #fetcher: fetchFunction;
+  options: ESIConfig;
+  esiFunction?: customESIVarsFunction;
+  fetcher: fetchFunction;
 
   constructor(
     options?: ESIConfig,
@@ -69,14 +69,14 @@ export class esi {
       enabled: true,
       contentTypes: ["text/html", "text/plain"],
     };
-    this.#options = { ...defaultConfig, ...options };
-    this.#fetcher = fetcher;
-    if (customESIFunction) this.#esiFunction = customESIFunction;
+    this.options = { ...defaultConfig, ...options };
+    this.fetcher = fetcher;
+    if (customESIFunction) this.esiFunction = customESIFunction;
   }
 
   async parse(origRequest: Request, recursion = 0): Promise<Response> {
     // Hit our limit? Bail out
-    const limit = this.#options.recursionLimit as number;
+    const limit = this.options.recursionLimit as number;
     if (recursion >= limit) {
       return new Response("");
     }
@@ -89,8 +89,8 @@ export class esi {
 
     // Load custom values if we can
     let customESIVariables;
-    if (this.#esiFunction) {
-      customESIVariables = await this.#esiFunction(origRequest);
+    if (this.esiFunction) {
+      customESIVariables = await this.esiFunction(origRequest);
     }
 
     // Add SurrogateControl header or append to it
@@ -98,7 +98,7 @@ export class esi {
 
     // pack our nice stuff in
     const eventData: ESIEventData = {
-      config: this.#options,
+      config: this.options,
       headers: esiVars.headers,
       method: esiVars.method,
       esiArgs: esiVars.esiArgs,
@@ -109,7 +109,7 @@ export class esi {
     };
 
     // grab the response from the upstream
-    const response = await this.#fetcher(request);
+    const response = await this.fetcher(request);
 
     // We can always return if any of the following
     // * Responses without bodies
@@ -118,11 +118,11 @@ export class esi {
     // * We can delegate Surrogate downstream
     if (
       !response.body ||
-      !this.#validContentType(response) ||
-      !this.#validSurrogateControl(response) ||
-      (await canDelegateToSurrogate(origRequest, this.#options))
+      !this.validContentType(response) ||
+      !this.validSurrogateControl(response) ||
+      (await canDelegateToSurrogate(origRequest, this.options))
     ) {
-      return response;
+      return new Response(response.body, response);
     }
 
     const { readable, writable } = new TransformStream();
@@ -146,12 +146,12 @@ export class esi {
     mutResponse.headers.delete("Surrogate-Control");
 
     // `streamBody` will free the request context when finished
-    this.#streamBody(eventData, response.body, writable);
+    this.streamBody(eventData, response.body, writable);
 
     return mutResponse;
   }
 
-  async #handleESI(eventData: ESIEventData, text: string): Promise<string> {
+  async handleESI(eventData: ESIEventData, text: string): Promise<string> {
     text = await processEscaping(text);
     text = await processComments(text);
     text = await processRemove(text);
@@ -164,17 +164,17 @@ export class esi {
       eventData,
       text,
       vars,
-      this.#fetcher,
-      this.#esiFunction
+      this.fetcher,
+      this.esiFunction
     );
 
     return text;
   }
-  async #handleTEXT(eventData: ESIEventData, text: string): Promise<string> {
+  async handleTEXT(eventData: ESIEventData, text: string): Promise<string> {
     return text;
   }
 
-  async #streamBody(
+  async streamBody(
     eventData: ESIEventData,
     readable: ReadableStream,
     writable: WritableStream
@@ -229,9 +229,9 @@ export class esi {
 
     const writer = (text: string, esi: boolean) => {
       if (esi) {
-        output.push(this.#handleESI(eventData, text));
+        output.push(this.handleESI(eventData, text));
       } else {
-        output.push(this.#handleTEXT(eventData, text));
+        output.push(this.handleTEXT(eventData, text));
       }
       flush_output();
     };
@@ -259,10 +259,10 @@ export class esi {
     });
   }
 
-  #validContentType(response: Response): boolean {
+  validContentType(response: Response): boolean {
     const resType = response.headers.get("Content-Type");
     if (resType) {
-      for (const allowedType of this.#options.contentTypes as string[]) {
+      for (const allowedType of this.options.contentTypes as string[]) {
         let sep: number | undefined = resType.search(";");
         if (sep === -1) sep = undefined;
         if (resType.substring(0, sep) === allowedType) {
@@ -273,7 +273,7 @@ export class esi {
     return false;
   }
 
-  #validSurrogateControl(response: Response): boolean {
+  validSurrogateControl(response: Response): boolean {
     const sControl = response.headers.get("Surrogate-Control");
     if (!sControl) {
       return false;
