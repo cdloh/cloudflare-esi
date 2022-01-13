@@ -13,7 +13,6 @@ import {
 import { getheaderToken } from "./headerUtils";
 
 export type ESIConfig = {
-  enabled?: boolean;
   disableThirdPartyIncludes?: boolean;
   thirdPatyIncludesDomainWhitelist?: string[];
   varsCookieBlacklist?: string[];
@@ -66,7 +65,6 @@ export class esi {
   ) {
     const defaultConfig = {
       recursionLimit: 10,
-      enabled: true,
       contentTypes: ["text/html", "text/plain"],
     };
     this.options = { ...defaultConfig, ...options };

@@ -38,7 +38,6 @@ beforeAll(() => {
 
 beforeEach(() => {
   config = {
-    enabled: true,
     contentTypes: ["text/html", "text/plain"],
   };
   parser = new esi(config);
@@ -53,7 +52,6 @@ afterAll((done) => {
 afterEach(async () => {
   expect(routeHandler.verify()).toBeTruthy();
   config = {
-    enabled: true,
     contentTypes: ["text/html", "text/plain"],
   };
 });
@@ -477,7 +475,7 @@ test("TEST 9: Variable evaluation", async () => {
   );
 });
 
-test.skip("TEST 9: Variable evaluation (defaults)", async () => {});
+test.skip("TEST 9: Variable evaluation (defaults)", async () => { });
 
 test("TEST 9b: Multiple Variable evaluation", async () => {
   const url = `/esi/test-9b`;

@@ -16,7 +16,6 @@ const makeRequest = async function (request: string, details?: RequestInit) {
 
 beforeEach(() => {
   config = {
-    enabled: true,
     contentTypes: ["text/html", "text/plain"],
   };
   parser = new esi(config);
@@ -24,7 +23,6 @@ beforeEach(() => {
 
 afterEach(async () => {
   config = {
-    enabled: true,
     contentTypes: ["text/html", "text/plain"],
   };
 });
