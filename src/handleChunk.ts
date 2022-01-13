@@ -38,7 +38,7 @@ export function create(writer: writerFunction): handleFunction {
       } else {
         const incompleteTag = value.search(/<(?:!--)?esi/);
         if (incompleteTag !== -1) {
-          prev_chunk = value
+          prev_chunk = value;
           break;
         }
 

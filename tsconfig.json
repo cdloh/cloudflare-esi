@@ -9,7 +9,7 @@
     "esModuleInterop": true,
     "declaration": true,
     "sourceMap": true,
-    "outDir": "dist",
+    "outDir": "dist"
   },
   "include": ["src/**/*"]
 }
