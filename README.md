@@ -6,10 +6,242 @@ Library supports all instructions that the Ledge parser supports.
 
 * [Licence](#licence)
 
+- [Installation](#installation)
+- [Usage](#usage)
+- [API](#api)
+  - [Config](#config)
+    - [allowSurrogateDelegation](#allowsurrogatedelegation)
+    - [contentTypes](#contenttypes)
+    - [disableThirdPartyIncludes](#disablethirdpartyincludes)
+    - [recursionLimit](#recursionlimit)
+    - [thirdPatyIncludesDomainWhitelist](#thirdpatyincludesdomainwhitelist)
+    - [varsCookieBlacklist](#varscookieblacklist)
+  - [Custom ESI Vars Function](#custom-esi-vars-function)
+  - [Custom Fetch Function](#custom-fetch-function)
+- [Caching and upstream requests](#caching-and-upstream-requests)
+- [Edge Side Includes](#edge-side-includes)
+  - [Regular expressions in conditions](#regular-expressions-in-conditions)
+  - [ESI Args](#esi-args)
+  - [Variable Escaping](#variable-escaping)
+  - [Missing ESI features](#missing-esi-features)
+- [Author](#author)
+- [Thanks](#thanks)
+- [Licence](#licence)
 
 ## Installation
 
 TODO
+
+## Usage
+
+Using within your worker is as easy as including it and passing your request to it!
+
+```javascript
+import esi from "cloudflare-esi"
+
+export default {
+	async fetch(request: Request, env: any, ctx: any) {
+		const parser = new esi()
+		return parser.parse(request)
+	}
+}
+
+```
+
+## API
+
+```javascript
+new esi(
+   options?: // Config
+   customESIFunction?: // Custom ESI Vars Function
+   fetcher?: // Custom Fetch Function
+)
+```
+
+### Config
+
+Main config object
+
+```javascript
+export type ESIConfig = {
+  allowSurrogateDelegation?: boolean | string[];
+  contentTypes?: string[];
+  disableThirdPartyIncludes?: boolean;
+  recursionLimit?: number;
+  thirdPatyIncludesDomainWhitelist?: string[];
+  varsCookieBlacklist?: string[];
+};
+
+// defaults
+const defaultConfig = {
+   allowSurrogateDelegation: false,
+   contentTypes: ["text/html", "text/plain"],
+   disableThirdPartyIncludes: false,
+   recursionLimit: 10,
+   thirdPatyIncludesDomainWhitelist: [],
+   varsCookieBlacklist: []
+}
+```
+
+#### allowSurrogateDelegation
+
+* *default*: `false`
+* *type*: `boolean | string[]`
+
+[ESI Surrogate Delegation](http://www.w3.org/TR/edge-arch) allows for downstream intermediaries to advertise a capability to process ESI instructions nearer to the client. By setting this to true any downstream offering this will disable ESI processing in the processor, delegating it downstream.
+
+When set to an array of IP address strings, delegation will only be allowed to requests that come from IPs that match. The `CF-Connecting-IP` header is compared.
+
+ This may be important if ESI instructions contain sensitive data which must be removed.
+
+#### contentTypes
+
+* *default*: `["text/html", "text/plain"]`
+* *type*: `string[]`
+
+Specifies content types to perform ESI processing on. All other content types will not be considered for processing and responses will be returned as is.
+
+This field is case sensitive.
+
+#### disableThirdPartyIncludes
+
+* *default*: `false`
+* *type*: `boolean`
+
+Whether or not to enable third party includes (includes from other domains).
+
+If set to false and an include points to another domain the include will be returned as a blank string
+
+Also see thirdPatyIncludesDomainWhitelist for usage with this.
+
+
+
+#### recursionLimit
+
+* *default*: `10`
+* *type*: `number`
+
+Levels of recusion the parser is allowed to go do. Think includes that include themselves causing recusion
+
+
+#### thirdPatyIncludesDomainWhitelist
+
+* *default*: `[]`
+* *type*: `string[]`
+
+If third party includes are disabled, you can also explicitly provide a whitelist of allowed third party domains.
+
+#### varsCookieBlacklist
+
+* *default*: `[]`
+* *type*: `string[]`
+
+Cookie names given here will not be expandable as ESI variables: e.g. `$(HTTP_COOKIE)` or `$(HTTP_COOKIE{foo})`. However they are not removed from the request data, and will still be propagated to `<esi:include>` subrequests.
+
+This is useful if your client is sending a sensitive cookie that you don't ever want to accidentally evaluate in server output.
+
+
+
+
+### Custom ESI Vars Function
+
+```
+export type customESIVarsFunction = (request: Request) => Promise<customESIVars>;
+export type customESIVars = {
+   [key: string]: string | { [key: string]: string };
+};
+```
+
+If you want to inject custom ESI vars into the parser per request you can pass the class a custom async function that will be evaluated each request.
+
+The async function accepts a request object and returns an object.
+
+The object values can either be strings or objects. If the value is an object it the ESIVar must be refrenced with a key in the ESI variable or the default variable will be returned.
+
+eg that pulls GEOIP data out of the Request and injects it as `GEOIP_X` ESI Vars
+
+```javascript
+const geoIPVarsFromRequest = async function (request) {
+  let customVariables = {};
+  let cfData = request.cf;
+  let geoipVars = [
+    'colo',
+    'country',
+    'city',
+    'continent',
+    'latitude',
+    'longitude',
+    'postalCode',
+    'metroCode',
+    'region',
+    'regionCode',
+    'timezone',
+  ]
+
+
+  geoipVars.forEach(function(key) {
+    var value = '';
+    if(cfData[key]) { value = cfData[key] }
+
+    customVariables[`GEOIP_${key.toUpperCase()}`] = value;
+  })
+
+  return customVariables
+
+}
+
+// create a new parser with default config
+new esi(undefined, geoIPVarsFromRequest)
+
+```
+
+
+### Custom Fetch Function
+
+Normally the parser uses the `fetch` API under the hood to make subrequests to get Responses, however if you want to use things like the Cache API within your worker you can pass a custom Fetcher function that will be used for all subrequests.
+
+The function must follow the same API as the normal `Fetch` function.
+
+eg function. Note this function has been defined in a scope where event already exists.
+
+```javascript
+const customFetcher = async function(request) {
+
+  const cache = caches.default
+
+  // Check whether the value is already available in the cache
+  // if not, you will need to fetch it from origin, and store it in the cache
+  // for future access
+  let response = await cache.match(cacheKey)
+
+  if (!response) {
+    // If not in cache, get it from origin
+    response = await fetch(request)
+
+    // Must use Response constructor to inherit all of response's fields
+    response = new Response(response.body, response)
+
+    // Cache API respects Cache-Control headers. Setting s-max-age to 10
+    // will limit the response to be in cache for 10 seconds max
+
+    // Any changes made to the response here will be reflected in the cached value
+    response.headers.append("Cache-Control", "s-maxage=10")
+
+    // Store the fetched response as cacheKey
+    // Use waitUntil so you can return the response without blocking on
+    // writing to cache
+    event.waitUntil(cache.put(cacheKey, response.clone()))
+  }
+  return response
+
+}
+
+// create a new parser with default config
+new esi(undefined, undefined, customFetcher)
+
+```
+
+
 
 ## Caching and upstream requests
 

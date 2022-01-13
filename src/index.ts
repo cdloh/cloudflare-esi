@@ -15,25 +15,25 @@ import { getheaderToken } from "./headerUtils";
 /**
  * Config for the parser
  *
- * @property {boolean} disableThirdPartyIncludes - Whether or not to enable third party includes (includes from other domains)
- * @property {string[]} thirdPatyIncludesDomainWhitelist - If third party includes are disabled you can white list them by including domains here
- * @property {string[]} varsCookieBlacklist - Array of strings of cookies that shouldn't be sent on any include requests
- * @property {string[]} contentTypes - Array of strings of content types that the parser should parse for ESI Tags
- * Note: That these are case sensitive. See - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
  * @property {boolean | string[]} allowSurrogateDelegation - Allows Surrogate Delegation
  * If boolean and the Request has valid Surrogate Delegation headers then no parsing will take place and requests will be sent onwards
  * If Array of strings then each string is treated as an IP Address. If the originally connecting IP matches one of those IPs then Delegation will happen
+ * @property {string[]} contentTypes - Array of strings of content types that the parser should parse for ESI Tags
+ * Note: That these are case sensitive. See - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+ * @property {boolean} disableThirdPartyIncludes - Whether or not to enable third party includes (includes from other domains)
  * @property {number} [recursionLimit] - Levels of recusion the parser is allowed to go do
  * think includes that include themselves causing recusion
  * @default 10
+ * @property {string[]} thirdPatyIncludesDomainWhitelist - If third party includes are disabled you can white list them by including domains here
+ * @property {string[]} varsCookieBlacklist - Array of strings of cookies that will be blacklisted from being expanded in esi VARs.
  */
 export type ESIConfig = {
+  allowSurrogateDelegation?: boolean | string[];
+  contentTypes?: string[];
   disableThirdPartyIncludes?: boolean;
+  recursionLimit?: number;
   thirdPatyIncludesDomainWhitelist?: string[];
   varsCookieBlacklist?: string[];
-  contentTypes?: string[];
-  allowSurrogateDelegation?: boolean | string[];
-  recursionLimit?: number;
 };
 
 export type ESIVars = {
