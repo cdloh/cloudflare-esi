@@ -12,6 +12,21 @@ import {
 } from "./surrogate";
 import { getheaderToken } from "./headerUtils";
 
+/**
+ * Config for the parser
+ *
+ * @property {boolean} disableThirdPartyIncludes - Whether or not to enable third party includes (includes from other domains)
+ * @property {string[]} thirdPatyIncludesDomainWhitelist - If third party includes are disabled you can white list them by including domains here
+ * @property {string[]} varsCookieBlacklist - Array of strings of cookies that shouldn't be sent on any include requests
+ * @property {string[]} contentTypes - Array of strings of content types that the parser should parse for ESI Tags
+ * Note: That these are case sensitive. See - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+ * @property {boolean | string[]} allowSurrogateDelegation - Allows Surrogate Delegation
+ * If boolean and the Request has valid Surrogate Delegation headers then no parsing will take place and requests will be sent onwards
+ * If Array of strings then each string is treated as an IP Address. If the originally connecting IP matches one of those IPs then Delegation will happen
+ * @property {number} [recursionLimit] - Levels of recusion the parser is allowed to go do
+ * think includes that include themselves causing recusion
+ * @default 10
+ */
 export type ESIConfig = {
   disableThirdPartyIncludes?: boolean;
   thirdPatyIncludesDomainWhitelist?: string[];
@@ -28,14 +43,56 @@ export type ESIVars = {
   url: URL;
 };
 
+/**
+ * ESI Event Data for the Current Request
+ *
+ * @property {ESIConfig} config - ESIConfig when class was created
+ * @property {Object} headers - All headers of the request uppercased
+ * @property {string} method - Method of the request
+ * @property {URLSearchParams} esiArgs - Any ESI Arguments extracted from the URL Search params of the original request
+ * Will be a URLSearchParam encoded object
+ * @property {customESIVars} customVars - If a custom ESI Vars function is supplied this will be the result of that function
+ * @property {URL} url - URL Object of the Request with ESI Args removed
+ * @property {Request} request - Request object after ESI Args have been removed
+ * @property {number} recursion - Recusion level we're currently at
+ */
 export type ESIEventData = {
+  /**
+   * {ESIConfig} for the current Request
+   */
   config: ESIConfig;
+  /**
+   * All headers of the current Request in {Object}
+   * All headers are uppercassed with - being converted to _
+   */
   headers: { [key: string]: string };
+  /**
+   * Request Method
+   */
   method: string;
+  /**
+   * Any ESI Arguments
+   */
   esiArgs: URLSearchParams;
+  /**
+   * If a custom ESI Vars function is supplied this will be the result of that function
+   *
+   * @default false
+   */
   customVars?: customESIVars;
+  /**
+   * {URL} Object of the Request with any ESI Args removed
+   */
   url: URL;
+  /**
+   * Mutatable {Request} object with the ESI Args removed
+   */
   request: Request;
+  /**
+   * Level of recursion the function is currently at
+   *
+   * @default 0
+   */
   recursion: number;
 };
 
@@ -187,6 +244,9 @@ export class esi {
     let pending: boolean;
     let ended: boolean;
 
+    /**
+     * Flushes output to the Writeable Stream
+     */
     async function flush_output() {
       // Can't call this if we're waiting for an sync option to complete
       if (pending) {
@@ -295,6 +355,13 @@ export class esi {
 // Pass in variables into ESI which identifies the request
 //
 const esiArgsRegex = /^esi_(\S+)/;
+/**
+ * Takes the original Request and strips ESI Args from the request
+ * Return a brand new mutatable Request along with an ESIVars object
+ *
+ * @param {Request} request - Original Request
+ * @returns {Promise<[Request, ESIVars]>} - Mutatable Request and ESIVars
+ */
 async function getVars(request: Request): Promise<[Request, ESIVars]> {
   const vars: ESIVars = {
     headers: {},
@@ -329,14 +396,32 @@ async function getVars(request: Request): Promise<[Request, ESIVars]> {
   return [new Request(current.toString(), request), vars];
 }
 
+/**
+ * Returns Processor Token string for Surrogate headers
+ * eg "ESI"
+ *
+ * @returns {string} - supported procesor token
+ */
 export function getProcessorToken(): string {
   return processorToken;
 }
 
+/**
+ * Returns Processor Version as a number for Surrogate headers
+ * eg 1.0
+ *
+ * @returns {number} - processor supported version
+ */
 export function getProcessorVersion(): number {
   return processorVersion;
 }
 
+/**
+ * Returns Processor Version as a string for Surrogate headers
+ * eg "1.0"
+ *
+ * @returns {string} - processor supported version
+ */
 export function getProcessorVersionString(): string {
   return processorVersion.toFixed(1);
 }

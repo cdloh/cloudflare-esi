@@ -1,5 +1,13 @@
 import { tagParser } from "./tagParser";
 
+/**
+ * Processes chunk of text and handles <!--esi tags
+ *
+ * @param {string} chunk Chunk of text to process
+ * @param {string[]} [res] Array of chunks of text already processed (used internally within function)
+ * @param {number} recursion recursion level we are currently at
+ * @returns {Promise<string>} processed string
+ */
 export async function process(
   chunk: string,
   res?: Array<string>,

@@ -5,6 +5,17 @@ import { ESIEventData } from ".";
 const esi_include_pattern = /<esi:include\s*src="[^"]+"\s*\/>/;
 const esi_src_pattern = /src="([^"]+)"/;
 
+/**
+ * Handles any <esi:include tags in supplied chunk
+ * returns processed chunk as a string
+ *
+ * @param {ESIEventData} eventData config for the current request
+ * @param {string} chunk chunk of text that we are about to process
+ * @param {boolean} evalVars Whether or not we need to process any esi Vars in the content
+ * @param {fetchFunction} fetcher original fetch function from ESI Class
+ * @param {customESIFunction} [customESIFunction] original customESIFunction if defined in the ESI Class
+ * @returns {string} processed chunk as a string
+ */
 export async function process(
   eventData: ESIEventData,
   chunk: string,
@@ -54,12 +65,23 @@ export async function process(
   return res.join("");
 }
 
+/**
+ * Handles fetching the include
+ * If we aren't allowed to include returns a blank string
+ * Otherwise parses the include and returns it as a string
+ *
+ * @param {ESIEventData} eventData config for the current request
+ * @param {string} include the full include tag from the content
+ * @param {fetchFunction} fetcher original fetch function from ESI Class
+ * @param {customESIFunction} [customESIFunction] original customESIFunction if defined in the ESI Class
+ * @returns {string} result of the include as a string
+ */
 async function fetchInclude(
   eventData: ESIEventData,
   include: string,
   fetcher: fetchFunction,
   customESIFunction?: customESIVarsFunction
-) {
+): Promise<string> {
   const src = parseSrcAttribute(eventData, include);
 
   if (!src) {
@@ -120,7 +142,17 @@ async function fetchInclude(
   return resTxt;
 }
 
-function parseSrcAttribute(eventData: ESIEventData, include: string) {
+/**
+ * Takes a full include tag and then returns the src attribute or null
+ *
+ * @param {ESIEventData} eventData config for the current request
+ * @param {string} include Full include tag
+ * @returns {string | null} src attribute from the include with ESI Vars replaced
+ */
+function parseSrcAttribute(
+  eventData: ESIEventData,
+  include: string
+): string | null {
   const src = include.match(esi_src_pattern);
 
   if (!src) {
@@ -130,10 +162,26 @@ function parseSrcAttribute(eventData: ESIEventData, include: string) {
   return replace_vars(eventData, src[1]);
 }
 
+/**
+ * Checks if the include is on the same domain as the original request
+ * Returns false if not
+ *
+ * @param {URL} requestURL Original Request URL
+ * @param {URL} srcURL URL that we are about to include
+ * @returns {boolean} true if on the same domain
+ */
 function isIncludeOnSameDomain(requestURL: URL, srcURL: URL): boolean {
   return srcURL.hostname == requestURL.hostname;
 }
 
+/**
+ * checks if a third party domain is whitelisted based off the current
+ * running config
+ *
+ * @param {ESIConfig} config config for the current request
+ * @param {string} host host to check against
+ * @returns {boolean} true if domain is whitelisted. false if not
+ */
 function thirdPartyWhitelisted(config: ESIConfig, host: string): boolean {
   if (config.disableThirdPartyIncludes) {
     if (!config.thirdPatyIncludesDomainWhitelist) {

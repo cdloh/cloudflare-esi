@@ -4,6 +4,16 @@ import { replace_vars, esi_eval_var } from "./processESIVars";
 
 const esi_when_pattern = /(?:<esi:when)\s+(?:test="(.+?)"\s*>)/;
 
+/**
+ * Takes a chunk of text and processes any esi:choose tags and returns processed chunk
+ * along with a boolean indicating if the chunk had any conditionals
+ *
+ * @param {ESIEventData} esiData ESI Data for this request
+ * @param {string} chunk Chunk of text in string form to process
+ * @param {Array<string>} [res] array of already processed chunks of string
+ * @param {number} [recursion] recusion level of the function
+ * @returns {Promise<[string, boolean]>} return processed string and boolean indicating if any instructions were processed
+ */
 export async function process(
   esiData: ESIEventData,
   chunk: string,
@@ -39,7 +49,7 @@ export async function process(
 
         if (tag && tag.closing && tag.whole && tag.contents) {
           if (tag.tagname == "esi:when" && !whenMatched) {
-            // eslint-disable-next-line no-inner-declarations
+            // eslint-disable-next-line no-inner-declarations, jsdoc/require-jsdoc
             async function processWhen(match: RegExpMatchArray) {
               const condition = match[1];
               const conditionValidated = await _esi_evaluate_condition(
@@ -105,6 +115,13 @@ export async function process(
 
 const regexExtractor = /\/(.*?)(?<!\\)\/([a-z]*)/;
 
+/**
+ * Evaluates esi Vars within when tag conditional statements
+ *
+ * @param {ESIEventData} eventData current request event data
+ * @param {string[]} match regex match of the var
+ * @returns {string} evaluated esi var
+ */
 function esi_eval_var_in_when_tag(
   eventData: ESIEventData,
   match: [String: string, ...args: string[]]
@@ -120,6 +137,13 @@ function esi_eval_var_in_when_tag(
   }
 }
 
+/**
+ * Takes a condition string and turns it into javascript to be ran
+ * if the condition is invalid returns null otherwise the compiled string
+ *
+ * @param {string} condition conditional string to build out
+ * @returns {null[] | [boolean, string]} valid condition compiled or null
+ */
 async function _esi_condition_lexer(condition: string) {
   const reg_esi_condition =
     /(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)')|(!=|!|\|{1,2}|&{1,2}|={2}|=~|\(|\)|<=|>=|>|<)/g;
@@ -206,10 +230,17 @@ async function _esi_condition_lexer(condition: string) {
   return [true, tokens.join(" ")];
 }
 
+/**
+ * Takes a condition and verifies if its true or false
+ *
+ * @param {ESIEventData} esiData current request event data
+ * @param {string} condition condition to test
+ * @returns {Promise<boolean>} condition result
+ */
 async function _esi_evaluate_condition(
   esiData: ESIEventData,
   condition: string
-) {
+): Promise<boolean> {
   // Check for variables
   condition = replace_vars(esiData, condition, esi_eval_var_in_when_tag);
 
@@ -220,7 +251,9 @@ async function _esi_evaluate_condition(
   }
 
   try {
-    const ret = Function(`"use strict"; return( ${compiledCondition} )`)();
+    const ret: boolean = Function(
+      `"use strict"; return( ${compiledCondition} )`
+    )();
     return ret;
   } catch (err) {
     return false;

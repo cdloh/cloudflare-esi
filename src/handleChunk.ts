@@ -1,9 +1,22 @@
-/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { tagParser } from "./tagParser";
 
+/**
+ * writerFunction for writing chunks of text from a readable stream
+ *
+ * @param {string} text chunk of text to write
+ * @param {boolean} esi Whether or not we found ESI in the chunk
+ * @returns {void}
+ */
 type writerFunction = (text: string, esi: boolean) => void;
 type handleFunction = (value: string, done: boolean) => Promise<void>;
 
+/**
+ *  Creates a chunk handler and returns a
+ *  handler that can takes a chunk of text and an indication if the stream has completed or nto
+ *
+ * @param {writerFunction} writer function to handle found chunks
+ * @returns {Function} chunk handler
+ */
 export function create(writer: writerFunction): handleFunction {
   let tag_hint: string | null;
   let prev_chunk = "";

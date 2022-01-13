@@ -7,6 +7,14 @@ const esiVarsPatternRegex =
 const esiGreaterArrow = /</g;
 const esiLessArrow = />/g;
 
+/**
+ * Processes <esi:var> tags within a chunk of text
+ * returns the processed chunk
+ *
+ * @param {ESIEventData} eventData event data for the current request
+ * @param {string} chunk string to process
+ * @returns {Promise<string>} processed string
+ */
 export async function process(
   eventData: ESIEventData,
   chunk: string
@@ -26,6 +34,15 @@ type replaceFunction = (
   var_match: [String: string, ...args: string[]]
 ) => string;
 
+/**
+ * Processes a string and replaces any esi vars within string
+ * returns the processed chunk
+ *
+ * @param {ESIEventData} eventData event data for the current request
+ * @param {string} str string to replace vars in
+ * @param {Function} [cb] optional function to pass matches too
+ * @returns {string} processed string
+ */
 export function replace_vars(
   eventData: ESIEventData,
   str: string,
@@ -38,6 +55,14 @@ export function replace_vars(
   });
 }
 
+/**
+ * Takes an ESI Var and evaluates it
+ * Escapes string if required
+ *
+ * @param {ESIEventData} eventData event data for the current request
+ * @param {string[]} var_match var to evaluate
+ * @returns {string} processed string
+ */
 export function esi_eval_var(
   eventData: ESIEventData,
   var_match: [String: string, ...args: string[]]
@@ -60,6 +85,14 @@ export function esi_eval_var(
   return res;
 }
 
+/**
+ * Takes an ESI Var and evaluates it
+ * Escapes string if required
+ *
+ * @param {ESIEventData} eventData event data for the current request
+ * @param {string[]} var_pattern var to evaluate
+ * @returns {string} processed string
+ */
 function _esi_eval_var(
   eventData: ESIEventData,
   var_pattern: [String: string, ...args: string[]]
