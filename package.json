@@ -1,9 +1,13 @@
 {
   "name": "cloudflare-esi",
   "version": "0.0.1",
+  "repository": "cdloh/cloudflare-esi",
   "description": "ESI Parser built to run in Cloudflare workers",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "build-worker": "node worker/build.js",
     "test": "npm run-script build-worker && node --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --collectCoverage --coverageProvider=v8",
     "test-debug": "npm run-script build-worker && node --experimental-vm-modules --inspect-brk node_modules/jest/bin/jest.js --runInBand",
@@ -11,8 +15,20 @@
     "lint": "eslint --max-warnings=0 src && prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "pretty": "prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "serviceworker",
+    "cloudflare",
+    "workers",
+    "esi",
+    "esi-parser"
+  ],
+  "author": {
+    "name": "Callum Loh",
+    "email": "callumloh@gmail.com"
+  },
+  "files": [
+    "dist"
+  ],
   "license": "BSD-2-Clause",
   "eslintConfig": {
     "root": true,
