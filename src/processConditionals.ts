@@ -11,14 +11,12 @@ const esi_when_pattern = /(?:<esi:when)\s+(?:test="(.+?)"\s*>)/;
  * @param {ESIEventData} esiData ESI Data for this request
  * @param {string} chunk Chunk of text in string form to process
  * @param {Array<string>} [res] array of already processed chunks of string
- * @param {number} [recursion] recusion level of the function
  * @returns {Promise<[string, boolean]>} return processed string and boolean indicating if any instructions were processed
  */
 export async function process(
   esiData: ESIEventData,
   chunk: string,
-  res: Array<string> = [],
-  recursion = 0
+  res: Array<string> = []
 ): Promise<[string, boolean]> {
   const parser = new tagParser(chunk);
   let after;
@@ -60,12 +58,7 @@ export async function process(
               if (tag && tag.contents && conditionValidated) {
                 whenMatched = true;
                 if (tag.contents.indexOf("esi:choose") !== -1) {
-                  await process(
-                    esiData,
-                    tag.contents as string,
-                    res,
-                    recursion + 1
-                  );
+                  await process(esiData, tag.contents as string, res);
                 } else {
                   res.push(tag.contents);
                 }
@@ -88,7 +81,7 @@ export async function process(
 
       if (!whenMatched && otherwise) {
         if (otherwise.indexOf("<esi:choose") !== -1) {
-          await process(esiData, otherwise, res, recursion + 1);
+          await process(esiData, otherwise, res);
         } else {
           res.push(otherwise);
         }

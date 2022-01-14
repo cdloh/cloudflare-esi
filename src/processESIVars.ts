@@ -46,12 +46,10 @@ type replaceFunction = (
 export function replace_vars(
   eventData: ESIEventData,
   str: string,
-  cb?: replaceFunction
+  cb: replaceFunction = esi_eval_var
 ): string {
-  const rcb = cb ? cb : esi_eval_var;
-
   return str.replace(esiVarsPatternRegex, function (...match) {
-    return rcb(eventData, match);
+    return cb(eventData, match);
   });
 }
 
