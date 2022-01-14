@@ -13,6 +13,7 @@
     "test-debug": "npm run-script build-worker && node --experimental-vm-modules --inspect-brk node_modules/jest/bin/jest.js --runInBand",
     "format": "prettier --write  '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "lint": "eslint --max-warnings=0 src && prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
+    "prepack": "npm run-script test && npm run-script lint && npm run-script build",
     "pretty": "prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'"
   },
   "keywords": [
