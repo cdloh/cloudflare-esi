@@ -1,10 +1,11 @@
 # Cloudflare ESI
 
-An RFC compliant [ESI](https://www.w3.org/TR/esi-lang) parser based off the [Ledge](https://github.com/ledgetech/ledge) openresty module.
+An RFC compliant [ESI](https://www.w3.org/TR/esi-lang) parser based off the [Ledge](https://github.com/ledgetech/ledge) openresty module written in TypeScript!
 
-Library supports all instructions that the Ledge parser supports.
+Built for usage within Cloudflare workers.
 
-* [Licence](#licence)
+
+Library supports all instructions that the Ledge parser supports. Also supports [Custom Fetch Functions](#custom-fetch-function) so you can use the Cache API or any other custom caching logic.
 
 - [Installation](#installation)
 - [Usage](#usage)
@@ -30,7 +31,9 @@ Library supports all instructions that the Ledge parser supports.
 
 ## Installation
 
-TODO
+```sh
+$ npm install cloudflare-esi
+```
 
 ## Usage
 
