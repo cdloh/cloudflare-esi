@@ -50,7 +50,7 @@
     "@types/jest": "^27.0.2",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
     "@typescript-eslint/parser": "^4.16.1",
-    "esbuild": "^0.13.13",
+    "esbuild": "^0.14.11",
     "eslint": "^7.21.0",
     "eslint-config-prettier": "^8.1.0",
     "eslint-config-typescript": "^3.0.0",
