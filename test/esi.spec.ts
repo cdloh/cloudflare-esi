@@ -325,9 +325,6 @@ test("TEST 6: Include multiple fragments, in correct order.", async () => {
   );
 });
 
-// Not sure if we're going to have this option
-test.todo("TEST 7: Leave instructions intact if ESI is not enabled.");
-
 // Ready just do not have this functionality yet
 test("TEST 7b: Leave instructions intact if ESI delegation is enabled - slow path.", async () => {
   let url = `/esi/test-7b`;
