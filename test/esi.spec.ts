@@ -475,8 +475,6 @@ test("TEST 9: Variable evaluation", async () => {
   );
 });
 
-test.skip("TEST 9: Variable evaluation (defaults)", async () => {});
-
 test("TEST 9b: Multiple Variable evaluation", async () => {
   const url = `/esi/test-9b`;
   routeHandler.add(`${url}?t=1`, function (req, res) {
