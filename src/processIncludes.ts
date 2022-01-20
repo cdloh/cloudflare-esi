@@ -2,8 +2,7 @@ import { replace_vars } from "./processESIVars";
 import esi, { customESIVarsFunction, ESIConfig, fetchFunction } from ".";
 import { ESIEventData } from ".";
 
-const esi_include_pattern = /<esi:include\s*src="[^"]+"\s*\/>/;
-const esi_src_pattern = /src="([^"]+)"/;
+const esi_include_pattern = /<esi:include\s*src="([^"]+)"\s*\/>/;
 
 /**
  * Handles any <esi:include tags in supplied chunk
@@ -39,14 +38,16 @@ export async function process(
     const includeMatch = chunk.match(esi_include_pattern);
 
     if (includeMatch && includeMatch.index !== undefined) {
+      // Push anything from before the tag into the response
       const before = chunk.substring(retFrom, includeMatch.index);
-
-      retFrom = includeMatch.index + includeMatch[0].length;
       res.push(evalVars ? replace_vars(eventData, before) : before);
+
+      // Keep the remainder for next chunk
+      retFrom = includeMatch.index + includeMatch[0].length;
 
       const include = await fetchInclude(
         eventData,
-        includeMatch[0],
+        includeMatch[1], // pass the src tag straight through
         fetcher,
         customESIFunction
       );
@@ -82,12 +83,8 @@ async function fetchInclude(
   fetcher: fetchFunction,
   customESIFunction?: customESIVarsFunction
 ): Promise<string> {
-  const src = parseSrcAttribute(eventData, include);
-
-  if (!src) {
-    // No src. Cant do anything
-    return "";
-  }
+  // replace any vars in the src string
+  const src = replace_vars(eventData, include);
 
   // TY JS for handling relatives etc for us
   const srcUrl = new URL(src, eventData.url.toString());
@@ -140,26 +137,6 @@ async function fetchInclude(
   const resTxt = await includeRes.text();
 
   return resTxt;
-}
-
-/**
- * Takes a full include tag and then returns the src attribute or null
- *
- * @param {ESIEventData} eventData config for the current request
- * @param {string} include Full include tag
- * @returns {string | null} src attribute from the include with ESI Vars replaced
- */
-function parseSrcAttribute(
-  eventData: ESIEventData,
-  include: string
-): string | null {
-  const src = include.match(esi_src_pattern);
-
-  if (!src) {
-    return null;
-  }
-
-  return replace_vars(eventData, src[1]);
 }
 
 /**
