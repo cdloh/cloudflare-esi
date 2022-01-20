@@ -266,6 +266,8 @@ In addition to the operators defined in the [ESI specification](https://www.w3.o
 
 The regex is parsed as a standard Javascript regex.
 
+*Note*: Regex expressions must be quoted and surrounded by //'s for the parser to pick them up.
+
 ### ESI Args
 
 It can be tempting to use URI arguments to pages using ESI in order to change layout dynamically, but this comes at the cost of generating multiple cache items - one for each permutation of URI arguments.

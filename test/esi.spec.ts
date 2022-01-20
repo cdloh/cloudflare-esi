@@ -877,6 +877,11 @@ test("TEST 17: choose - when - test, conditional syntax", async () => {
     `'htxtp://example.com?foo=bar' =~ '/^(http[s]?)://([^:/]+)(?::(\d+))?(.*)/'`,
     "(1 > 2) | (3.02 > 2.4124 & 1 <= 1) && ('HeLLo' =~ '/hello/i')",
     "2 =~ '/[0-9]/'",
+    // Should be a failed regex
+    "2 =~ ''",
+    "2 =~ '.'",
+    "2 ==",
+    "2 =~ =~",
     "$(HTTP_ACCEPT_LANGUAGE{gb}) == 'true'",
     "$(HTTP_ACCEPT_LANGUAGE{fr}) == 'false'",
     "$(HTTP_ACCEPT_LANGUAGE{fr}) == 'true'",
@@ -924,6 +929,10 @@ hel'lo == 'hel\\'lo'
 Failed
 (1 > 2) | (3.02 > 2.4124 & 1 <= 1) && ('HeLLo' =~ '/hello/i')
 2 =~ '/[0-9]/'
+Failed
+Failed
+Failed
+Failed
 true == 'true'
 false == 'false'
 Failed
