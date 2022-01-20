@@ -325,9 +325,6 @@ test("TEST 6: Include multiple fragments, in correct order.", async () => {
   );
 });
 
-// Not sure if we're going to have this option
-test.todo("TEST 7: Leave instructions intact if ESI is not enabled.");
-
 // Ready just do not have this functionality yet
 test("TEST 7b: Leave instructions intact if ESI delegation is enabled - slow path.", async () => {
   let url = `/esi/test-7b`;
@@ -474,8 +471,6 @@ test("TEST 9: Variable evaluation", async () => {
     `HTTP_COOKIE: myvar=foo; SQ_SYSTEM_SESSION=hello\nHTTP_COOKIE{SQ_SYSTEM_SESSION}: hello\n\nHTTP_COOKIE: myvar=foo; SQ_SYSTEM_SESSION=hello\nHTTP_COOKIE{SQ_SYSTEM_SESSION}: hello\nHTTP_COOKIE{SQ_SYSTEM_SESSION_TYPO}: default message\n\nhello$(HTTP_COOKIE)t=1\n$(HTTP_X_MANY_HEADERS): 1, 2, 3, 4, 5, 6=hello\n$(HTTP_X_MANY_HEADERS{2}): 1, 2, 3, 4, 5, 6=hello`
   );
 });
-
-test.skip("TEST 9: Variable evaluation (defaults)", async () => {});
 
 test("TEST 9b: Multiple Variable evaluation", async () => {
   const url = `/esi/test-9b`;
@@ -742,9 +737,21 @@ test.todo(
 test.todo(
   "TEST 12d: Incomplete ESI tag opening at the end of buffer (lookahead)"
 );
-test.todo(
-  "TEST 12e: Incomplete ESI tag opening at the end of response (regression)"
-);
+
+test("TEST 12e: Incomplete ESI tag opening at the end of response (regression)", async () => {
+  const url = `/esi/test-12e?a=1`;
+  routeHandler.add(`${url}`, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.write(`---<esi:vars>`);
+    res.write(`$(QUERY_STRING)`);
+    res.end("</esi:vars><es");
+  });
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`---a=1<es`);
+});
+
 test.todo("TEST 13: ESI processed over buffer larger than max_memory.");
 
 test("TEST 14: choose - when - otherwise, first when matched", async () => {
@@ -882,6 +889,11 @@ test("TEST 17: choose - when - test, conditional syntax", async () => {
     `'htxtp://example.com?foo=bar' =~ '/^(http[s]?)://([^:/]+)(?::(\d+))?(.*)/'`,
     "(1 > 2) | (3.02 > 2.4124 & 1 <= 1) && ('HeLLo' =~ '/hello/i')",
     "2 =~ '/[0-9]/'",
+    // Should be a failed regex
+    "2 =~ ''",
+    "2 =~ '.'",
+    "2 ==",
+    "2 =~ =~",
     "$(HTTP_ACCEPT_LANGUAGE{gb}) == 'true'",
     "$(HTTP_ACCEPT_LANGUAGE{fr}) == 'false'",
     "$(HTTP_ACCEPT_LANGUAGE{fr}) == 'true'",
@@ -929,6 +941,10 @@ hel'lo == 'hel\\'lo'
 Failed
 (1 > 2) | (3.02 > 2.4124 & 1 <= 1) && ('HeLLo' =~ '/hello/i')
 2 =~ '/[0-9]/'
+Failed
+Failed
+Failed
+Failed
 true == 'true'
 false == 'false'
 Failed

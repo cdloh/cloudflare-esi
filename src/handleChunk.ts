@@ -18,34 +18,29 @@ type handleFunction = (value: string, done: boolean) => Promise<void>;
  * @returns {Function} chunk handler
  */
 export function create(writer: writerFunction): handleFunction {
-  let tag_hint: string | null;
   let prev_chunk = "";
 
-  return async function (value: string, done: boolean): Promise<void> {
-    if (tag_hint) {
-      value = tag_hint + value;
-      tag_hint = null;
+  const writeString = function (str: string | undefined): void {
+    if (typeof str == "string" && str.length !== 0) {
+      writer(str, false);
     }
+  };
 
+  return async function (value: string, done: boolean): Promise<void> {
     value = prev_chunk + value;
 
     const parser = new tagParser(value);
     do {
       const [tag, before, after] = await parser.next();
 
-      if (tag && tag.whole) {
-        if (before) {
-          writer(before, false);
-        }
-        writer(tag.whole, true);
+      // Always write before if we have it
+      writeString(before);
 
+      if (tag && tag.whole) {
+        writer(tag.whole, true);
         value = after as string;
         prev_chunk = "";
       } else if (tag && !tag.whole) {
-        if (typeof before == "string" && before.length !== 0) {
-          writer(before, false);
-        }
-
         prev_chunk = tag.opening.tag + after;
         break;
       } else {
@@ -59,12 +54,10 @@ export function create(writer: writerFunction): handleFunction {
           .slice(-6)
           .match(/(?:<!--es|<!--e|<!--|<es|<!-|<e|<!|<)$/);
         if (hintMatch) {
-          tag_hint = hintMatch[0];
-          value = value.substring(0, value.length - tag_hint.length);
+          prev_chunk = hintMatch[0];
+          value = value.substring(0, value.length - prev_chunk.length);
         }
-        if (typeof value == "string" && value.length !== 0) {
-          writer(value, false);
-        }
+        writeString(value);
         break;
       }
 
@@ -74,9 +67,7 @@ export function create(writer: writerFunction): handleFunction {
     // Check if we had something left over
     // But we didnt write it
     if (done) {
-      if (typeof prev_chunk == "string" && prev_chunk.length !== 0) {
-        writer(prev_chunk, false);
-      }
+      writeString(prev_chunk);
     }
   };
 }

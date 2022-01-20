@@ -185,7 +185,7 @@ async function _esi_condition_lexer(condition: string) {
       if (expectingPattern) {
         const regex = string.match(regexExtractor);
         if (!regex) {
-          return [null, null];
+          return null;
         } else {
           const pattern = regex[1];
           const options = regex[2];
@@ -202,7 +202,7 @@ async function _esi_condition_lexer(condition: string) {
       token_type = "operator";
       if (operator == "=~") {
         if (prev_type == "operator") {
-          return [null, null];
+          return null;
         } else {
           expectingPattern = true;
         }
@@ -213,14 +213,20 @@ async function _esi_condition_lexer(condition: string) {
 
     if (prev_type !== "nil") {
       if (!lexer_rules[prev_type][token_type]) {
-        return [null, null];
+        return null;
       }
     }
     // Derefence it
     prev_type = `${token_type}`;
   }
 
-  return [true, tokens.join(" ")];
+  // If we havent got a regex yet but we're expecting one
+  // fail.
+  if (expectingPattern) {
+    return null;
+  }
+
+  return tokens.join(" ");
 }
 
 /**
@@ -237,9 +243,9 @@ async function _esi_evaluate_condition(
   // Check for variables
   condition = replace_vars(esiData, condition, esi_eval_var_in_when_tag);
 
-  const [ok, compiledCondition] = await _esi_condition_lexer(condition);
+  const compiledCondition = await _esi_condition_lexer(condition);
 
-  if (!ok) {
+  if (!compiledCondition) {
     return false;
   }
 
