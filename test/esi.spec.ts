@@ -737,9 +737,21 @@ test.todo(
 test.todo(
   "TEST 12d: Incomplete ESI tag opening at the end of buffer (lookahead)"
 );
-test.todo(
-  "TEST 12e: Incomplete ESI tag opening at the end of response (regression)"
-);
+
+test("TEST 12e: Incomplete ESI tag opening at the end of response (regression)", async () => {
+  const url = `/esi/test-12e?a=1`;
+  routeHandler.add(`${url}`, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.write(`---<esi:vars>`);
+    res.write(`$(QUERY_STRING)`);
+    res.end("</esi:vars><es");
+  });
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`---a=1<es`);
+});
+
 test.todo("TEST 13: ESI processed over buffer larger than max_memory.");
 
 test("TEST 14: choose - when - otherwise, first when matched", async () => {
