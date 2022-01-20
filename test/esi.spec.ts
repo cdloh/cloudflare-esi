@@ -252,7 +252,7 @@ test("TEST 5b: Test fragment always issues GET and only inherits correct req hea
   expect(checkSurrogate(res)).toBeTruthy();
   const text = await res.text();
   expect(text).toEqual(
-    `ORIGINAL METHOD: POST\nmethod: GET\nhost: localhost:${port}\nconnection: keep-alive\naccept: */*\naccept-encoding: gzip, deflate\naccept-language: *\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nsec-fetch-mode: cors\nsurrogate-capability: cloudflareWorkerESI="ESI/1.0"\nuser-agent: undici\nx-esi-parent-uri: http://localhost:${port}/esi/test-5b\nx-esi-recursion-level: 1\n`
+    `ORIGINAL METHOD: POST\nmethod: GET\nhost: localhost:${port}\nconnection: keep-alive\naccept-encoding: gzip, deflate\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nmf-loop: 1\nsurrogate-capability: cloudflareWorkerESI="ESI/1.0"\nx-esi-parent-uri: http://localhost:${port}/esi/test-5b\nx-esi-recursion-level: 1\n`
   );
 });
 
@@ -1646,7 +1646,7 @@ test("TEST 45: Cookies and Authorization propagate to fragment on same domain", 
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `method: GET\nhost: ${testingDetails.hostname}:${testingDetails.port}\nconnection: keep-alive\naccept: */*\naccept-encoding: gzip, deflate\naccept-language: *\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nsec-fetch-mode: cors\nsurrogate-capability: cloudflareWorkerESI="ESI/1.0"\nuser-agent: undici\nx-esi-parent-uri: http://localhost:${port}/esi/test-45\nx-esi-recursion-level: 1\n`
+    `method: GET\nhost: ${testingDetails.hostname}:${testingDetails.port}\nconnection: keep-alive\naccept-encoding: gzip, deflate\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nmf-loop: 1\nsurrogate-capability: cloudflareWorkerESI="ESI/1.0"\nx-esi-parent-uri: http://localhost:${port}/esi/test-45\nx-esi-recursion-level: 1\n`
   );
 });
 
