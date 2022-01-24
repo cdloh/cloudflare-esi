@@ -1,0 +1,49 @@
+name: deploy
+on:
+  workflow_run:
+    workflows: ["Test"]
+    types:
+      - completed
+  push:
+
+
+jobs:
+  deploy:
+    if: ${{ github.repository_owner == 'cdloh' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get branch name
+        id: git
+        run: |
+          NAME=$(echo ${GITHUB_REF} | sed -e "s/.*\///g")
+          TAG=false
+          if [[ ${GITHUB_REF} == *"/tags/"* ]]; then
+            TAG=true
+          fi
+          echo name=${NAME}  tag=${TAG}  ref=${GITHUB_REF}
+          echo "::set-output name=name::${NAME}"
+          echo "::set-output name=tag::${TAG}"
+
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+      - run: npm build
+
+      - name: Push latest
+        if: steps.git.outputs.tag == 'true'
+        run: npm publish --tag latest
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push main branch
+        if: steps.git.outputs.tag !== 'true' && steps.git.outputs.name == 'main'
+        run: npm version 0.0.0-$GITHUB_SHA && npm publish --tag next
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
