@@ -1,8 +1,8 @@
 name: deploy
 on:
   push:
-    branches:
-      - main
+    tags:
+      - '*'
 
 
 jobs:
@@ -25,6 +25,6 @@ jobs:
       - run: npm run lint
 
       - name: Push main branch
-        run: npm version 0.0.0-$GITHUB_SHA && npm publish --tag next
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
