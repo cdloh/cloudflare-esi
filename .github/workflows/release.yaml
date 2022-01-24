@@ -24,6 +24,7 @@ jobs:
       - run: npm run test
       - run: npm run lint
 
+      - uses: fregante/setup-git-user@v1
       - name: Push main branch
         run: npm version 0.0.0-$GITHUB_SHA && npm publish --tag next
         env:
