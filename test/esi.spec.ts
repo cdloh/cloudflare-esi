@@ -1461,7 +1461,7 @@ test("TEST 35b: ESI_ARGS works", async () => {
   const res = await makeRequest(`${url}?esi_a=test&foo=bar`);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
-  expect(await res.text()).toEqual(`test\nnoarg\na=test\nOK`);
+  expect(await res.text()).toEqual(`test\nnoarg\nesi_a=test\nOK`);
 });
 
 test.todo("TEST 36: No error if res.has_esi incorrectly set_debug");
@@ -1770,5 +1770,21 @@ test("TEST 46b: Cookie var blacklist on fragment", async () => {
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
     `allowed=yes; also_allowed=yes\nyes:\nFRAGMENT:?&allowed=yes&not_allowed=\nallowed=yes; also_allowed=yes; not_allowed=no`
+  );
+});
+
+test("TEST 47: Query string", async () => {
+  const url = `/esi/test-47`;
+  routeHandler.add(`${url}?foo=Bar`, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.write("<esi:vars>$(ESI_ARGS)</esi:vars>:");
+    res.write("<esi:vars>name:$(ESI_ARGS{name})</esi:vars>:");
+    res.end("<esi:vars>$(QUERY_STRING)$(QUERY_STRING{esi_name})</esi:vars>");
+  });
+  const res = await makeRequest(`${url}?esi_name=James&foo=Bar&esi_foo=Bar`);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(
+    "esi_name=James&esi_foo=Bar:name:James:foo=Bar"
   );
 });

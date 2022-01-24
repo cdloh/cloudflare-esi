@@ -1,5 +1,5 @@
 import { parse } from "worktop/cookie";
-import { ESIEventData } from ".";
+import { ESIEventData, esiArgsPrefix } from ".";
 
 const esiVarsRegex = /(<esi:vars>)(.*?)(<\/esi:vars>)/gs;
 const esiVarsPatternRegex =
@@ -165,7 +165,10 @@ function _esi_eval_var(
     if (!key) {
       return esiArgs.toString();
     } else {
-      return esiArgs.has(key) ? esiArgs.getAll(key).join(", ") : default_var;
+      const keyWithPrefix = `${esiArgsPrefix}${key}`;
+      return esiArgs.has(keyWithPrefix)
+        ? esiArgs.getAll(keyWithPrefix).join(", ")
+        : default_var;
     }
   } else {
     const customVaribles = eventData.customVars;
