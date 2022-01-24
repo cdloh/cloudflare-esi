@@ -354,6 +354,7 @@ export class esi {
 // Return
 // Pass in variables into ESI which identifies the request
 //
+export const esiArgsPrefix = "esi_";
 const esiArgsRegex = /^esi_(\S+)/;
 /**
  * Takes the original Request and strips ESI Args from the request
@@ -378,7 +379,7 @@ async function getVars(request: Request): Promise<[Request, ESIVars]> {
       for (const entry of current.searchParams.getAll(key)) {
         // have to append each entry seperatrely
         // trying to push an array results in sanatised arguments
-        vars.esiArgs.append(match[1], entry);
+        vars.esiArgs.append(esiArgsPrefix + match[1], entry);
       }
       current.searchParams.delete(key);
     }
