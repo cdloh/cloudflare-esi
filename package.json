@@ -43,8 +43,12 @@
     ],
     "rules": {
       "jsdoc/no-undefined-types": 0,
-      "no-new-func": ["error"],
-      "no-eval": ["error"]
+      "no-new-func": [
+        "error"
+      ],
+      "no-eval": [
+        "error"
+      ]
     }
   },
   "devDependencies": {
