@@ -29,7 +29,7 @@ afterEach(async () => {
 
 test("TEST 1: Custom Fetcher", async () => {
   const url = `/esi/test-1`;
-  let customFetch: fetchFunction = async function (request) {
+  const customFetch: fetchFunction = async function (request) {
     return new Response("CONTENT HERE");
   };
   parser = new esi(config, undefined, customFetch);
@@ -41,7 +41,7 @@ test("TEST 1: Custom Fetcher", async () => {
 
 test("TEST 2: Custom Fetcher with ESI", async () => {
   const url = `/esi/test-2/?a=1&b=2&c=3`;
-  let customFetch: fetchFunction = async function (request) {
+  const customFetch: fetchFunction = async function (request) {
     return new Response(
       `BEFORE
 <!--esi<esi:vars>$(QUERY_STRING{a})</esi:vars>
@@ -62,7 +62,7 @@ test("TEST 2: Custom Fetcher with ESI", async () => {
 test("TEST 3: Custom Fetcher with ESI with includes", async () => {
   const url = `/esi/test-3`;
   let responseNo = 0;
-  let customFetch: fetchFunction = async function (request) {
+  const customFetch: fetchFunction = async function (request) {
     responseNo++;
     if (responseNo == 1)
       return new Response(
@@ -77,4 +77,17 @@ test("TEST 3: Custom Fetcher with ESI with includes", async () => {
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual("BEFORE OK AFTER");
   expect(responseNo).toBe(2);
+});
+
+test("TEST 4: Custom Fetcher might want to use the POST Body", async () => {
+  const url = `/esi/test-4`;
+  const customFetch: fetchFunction = async function (request) {
+    const r = request as Request;
+    return new Response(r.bodyUsed.toString());
+  };
+  parser = new esi(config, undefined, customFetch);
+  const res = await makeRequest(url, { method: "POST", body: "POST BODY" });
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual("false");
 });

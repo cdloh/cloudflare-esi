@@ -1788,3 +1788,25 @@ test("TEST 47: Query string", async () => {
     "esi_name=James&esi_foo=Bar:name:James:foo=Bar"
   );
 });
+
+test("TEST 48: POST With body", async () => {
+  const url = `/esi/test-48`;
+  const postBody = "POST BODY";
+  routeHandler.add(url, function (req, res) {
+    let str = "";
+    req.on("data", (chunk) => {
+      str += chunk;
+    });
+    req.on("end", () => {
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end(str);
+    });
+  });
+  const res = await makeRequest(url, {
+    method: "POST",
+    body: postBody,
+  });
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(postBody);
+});

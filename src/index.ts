@@ -394,7 +394,7 @@ async function getVars(request: Request): Promise<[Request, ESIVars]> {
   }
 
   // return a brand new
-  return [new Request(current.toString(), request), vars];
+  return [new Request(current.toString(), request.clone()), vars];
 }
 
 /**
