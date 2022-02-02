@@ -239,9 +239,36 @@ function esiConditionTester(
  */
 async function esi_seperator_splitter(condition: string): Promise<boolean> {
   let startingIndex = 0;
-  let preResult: null | boolean = null;
-  let preSeperator: null | string = null;
   let negatorySeperator = false;
+  let prevSeperator = '';
+  let valid: boolean | null = null;
+  const handleString = async function (str: string) {
+    if (str == "false" || str == "true") {
+      return str === "true"
+    } else {
+      return await _esi_condition_lexer(str);
+    }
+  }
+  const validityCheck = function (res: boolean, seperator: string): boolean {
+
+    if (negatorySeperator) {
+      res = !res
+      negatorySeperator = !negatorySeperator
+    }
+
+    switch (seperator) {
+      case '&':
+      case '&&':
+        return valid as boolean && res;
+      case '||':
+      case '|':
+        return valid || res;
+    }
+    if (valid == null) {
+      return res
+    }
+    return valid as boolean
+  }
 
   const tokensSplit = condition.matchAll(reg_esi_seperator);
 
@@ -255,58 +282,22 @@ async function esi_seperator_splitter(condition: string): Promise<boolean> {
       continue;
     }
 
-    // We dont need to worry about it so lets keep going
-    if (preResult && (seperator == "|" || seperator == "||")) {
-      continue;
-    }
-
     const conditionBefore = condition
       .substring(startingIndex, token.index)
       .trim();
 
-    let conditionResult: boolean;
-    // We already have a result to this
-    // So convert it and return it
-    if (conditionBefore == "false" || conditionBefore == "true") {
-      conditionResult = conditionBefore === "true";
-    } else {
-      conditionResult = await _esi_condition_lexer(conditionBefore);
-    }
+    const res = await handleString(conditionBefore)
+    valid = validityCheck(res, prevSeperator)
 
-    if (negatorySeperator) {
-      conditionResult = !conditionResult;
-      negatorySeperator = false;
-    }
-
-    // If the condition result is false && it has to be true
-    // bail out
-    if (!conditionResult && (seperator == "&" || seperator == "&&")) {
-      continue;
-    }
-
-    // save our results and keep going
-    preResult = conditionResult;
-    preSeperator = seperator;
+    prevSeperator = seperator
     // Move onto the next one
-    startingIndex = (token.index as number) + preSeperator.length;
+    startingIndex = (token.index as number) + seperator.length;
   }
 
-  if ((preSeperator == "|" || preSeperator == "||") && preResult) {
-    return preResult as boolean;
-  }
+  const finalRes = await handleString(condition.substring(startingIndex).trim())
+  valid = validityCheck(finalRes, prevSeperator)
 
-  const finalString = condition.substring(startingIndex).trim();
-  let finalResult: boolean;
-  // We already have a result to this
-  // So convert it and return it
-  if (finalString == "false" || finalString == "true") {
-    finalResult = finalString === "true";
-  } else {
-    finalResult = await _esi_condition_lexer(finalString);
-  }
-
-  if (negatorySeperator) finalResult = !finalResult;
-  return finalResult;
+  return valid;
 }
 
 /**
