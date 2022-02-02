@@ -903,7 +903,7 @@ test("TEST 17: choose - when - test, conditional syntax", async () => {
     "(1==1) && (1==2) || (1==1)",
     `((1==1) && (1==1) || (1==2)) && ((1==1) || ((1==2) && (1==1)))`,
     `(((1==1) && (1==1)) || (1==2) && !(1==1))`,
-    `((1==1) && !(1==2)) && (1==1) && !(1==2)`
+    `((1==1) && !(1==2)) && (1==1) && !(1==2)`,
   ];
   const url = `/esi/test-17?msg=hello&msg2=hel'lo`;
   routeHandler.add(`/esi/test-17?msg=hello&msg2=hel%27lo`, function (req, res) {

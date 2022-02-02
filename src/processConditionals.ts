@@ -240,35 +240,34 @@ function esiConditionTester(
 async function esi_seperator_splitter(condition: string): Promise<boolean> {
   let startingIndex = 0;
   let negatorySeperator = false;
-  let prevSeperator = '';
+  let prevSeperator = "";
   let valid: boolean | null = null;
   const handleString = async function (str: string) {
     if (str == "false" || str == "true") {
-      return str === "true"
+      return str === "true";
     } else {
       return await _esi_condition_lexer(str);
     }
-  }
+  };
   const validityCheck = function (res: boolean, seperator: string): boolean {
-
     if (negatorySeperator) {
-      res = !res
-      negatorySeperator = !negatorySeperator
+      res = !res;
+      negatorySeperator = !negatorySeperator;
     }
 
     switch (seperator) {
-      case '&':
-      case '&&':
-        return valid as boolean && res;
-      case '||':
-      case '|':
+      case "&":
+      case "&&":
+        return (valid as boolean) && res;
+      case "||":
+      case "|":
         return valid || res;
     }
     if (valid == null) {
-      return res
+      return res;
     }
-    return valid as boolean
-  }
+    return valid as boolean;
+  };
 
   const tokensSplit = condition.matchAll(reg_esi_seperator);
 
@@ -286,16 +285,18 @@ async function esi_seperator_splitter(condition: string): Promise<boolean> {
       .substring(startingIndex, token.index)
       .trim();
 
-    const res = await handleString(conditionBefore)
-    valid = validityCheck(res, prevSeperator)
+    const res = await handleString(conditionBefore);
+    valid = validityCheck(res, prevSeperator);
 
-    prevSeperator = seperator
+    prevSeperator = seperator;
     // Move onto the next one
     startingIndex = (token.index as number) + seperator.length;
   }
 
-  const finalRes = await handleString(condition.substring(startingIndex).trim())
-  valid = validityCheck(finalRes, prevSeperator)
+  const finalRes = await handleString(
+    condition.substring(startingIndex).trim()
+  );
+  valid = validityCheck(finalRes, prevSeperator);
 
   return valid;
 }
