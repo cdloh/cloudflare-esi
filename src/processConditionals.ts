@@ -108,10 +108,10 @@ export async function process(
 
 // All of our ESI regexs
 const regexExtractor = /\/(.*?)(?<!\\)\/([a-z]*)/;
-const reg_esi_seperator = /(?:'.*?(?<!\\)')|(\|{1,2}|&{1,2})/g;
+const reg_esi_seperator = /(?:'.*?(?<!\\)')|(\|{1,2}|&{1,2}|!(?!=))/g;
 const reg_esi_brackets = /(?:'.*?(?<!\\)')|(\(|\))/g;
 const reg_esi_condition =
-  /(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)')|(!=|!|\|{1,2}|&{1,2}|={2}|=~|\(|\)|<=|>=|>|<)/g;
+  /(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)')|(!=|={2}|=~|<=|>=|>|<)/g;
 
 /**
  * Evaluates esi Vars within when tag conditional statements
@@ -152,25 +152,22 @@ async function _esi_condition_lexer(condition: string): Promise<boolean> {
     "!": "!",
   };
 
-  let left: number | string | boolean | null = null;
-  let right: number | string | boolean | null = null;
+  let left: number | string | null = null;
+  let right: number | string | null = null;
   let op: string | null = null;
-  const setLR = function (value: number | string | boolean): void {
+  const setLR = function (value: number | string): void {
     left !== null ? (right = value) : (left = value);
   };
 
   const tokensSplit = condition.matchAll(reg_esi_condition);
   for (const token of tokensSplit) {
     const number = token[1];
-    let string: string | boolean = token[2];
+    const string = token[2];
     const operator = token[3];
 
     if (number) {
       setLR(number);
     } else if (string) {
-      if (string === "false" || string === "true") {
-        string = string === "true";
-      }
       setLR(string);
     } else if (operator) {
       op = op_replacements[operator] || operator;
@@ -188,14 +185,14 @@ async function _esi_condition_lexer(condition: string): Promise<boolean> {
  * Takes a condition broken down into an a, b & operator and tests the data
  * returns the result
  *
- * @param {string | number | boolean} left conditional left
- * @param {string | number | boolean} right conditional right
+ * @param {string | number} left conditional left
+ * @param {string | number} right conditional right
  * @param {string} operator operator to compare
  * @returns {boolean} condition result
  */
 function esiConditionTester(
-  left: string | number | boolean,
-  right: string | number | boolean,
+  left: string | number,
+  right: string | number,
   operator: string
 ): boolean {
   switch (operator) {
@@ -244,12 +241,19 @@ async function esi_seperator_splitter(condition: string): Promise<boolean> {
   let startingIndex = 0;
   let preResult: null | boolean = null;
   let preSeperator: null | string = null;
+  let negatorySeperator = false;
 
   const tokensSplit = condition.matchAll(reg_esi_seperator);
 
   for (const token of tokensSplit) {
     if (!token[1]) continue;
     const seperator = token[1];
+
+    // Negatory seperator!
+    if (seperator == "!") {
+      negatorySeperator = !negatorySeperator;
+      continue;
+    }
 
     // We dont need to worry about it so lets keep going
     if (preResult && (seperator == "|" || seperator == "||")) {
@@ -269,10 +273,15 @@ async function esi_seperator_splitter(condition: string): Promise<boolean> {
       conditionResult = await _esi_condition_lexer(conditionBefore);
     }
 
+    if (negatorySeperator) {
+      conditionResult = !conditionResult;
+      negatorySeperator = false;
+    }
+
     // If the condition result is false && it has to be true
     // bail out
     if (!conditionResult && (seperator == "&" || seperator == "&&")) {
-      return false;
+      continue;
     }
 
     // save our results and keep going
@@ -296,6 +305,7 @@ async function esi_seperator_splitter(condition: string): Promise<boolean> {
     finalResult = await _esi_condition_lexer(finalString);
   }
 
+  if (negatorySeperator) finalResult = !finalResult;
   return finalResult;
 }
 
