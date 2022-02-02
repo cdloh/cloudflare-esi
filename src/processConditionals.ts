@@ -173,8 +173,8 @@ async function _esi_condition_lexer(condition: string): Promise<boolean> {
  * @returns {boolean} condition result
  */
 function esiConditionTester(
-  left: string | number,
-  right: string | number,
+  left: string,
+  right: string,
   operator: string
 ): boolean {
   switch (operator) {
@@ -192,7 +192,6 @@ function esiConditionTester(
     case ">":
       return left > right;
     case "=~": {
-      if (typeof left !== "string" || typeof right !== "string") return false;
       const regex = right.match(regexExtractor);
       if (!regex) return false;
       // Bloody javascript!
