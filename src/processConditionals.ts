@@ -111,7 +111,7 @@ const regexExtractor = /\/(.*?)(?<!\\)\/([a-z]*)/;
 const reg_esi_seperator = /(?:'.*?(?<!\\)')|(\|{1,2}|&{1,2}|!(?!=))/g;
 const reg_esi_brackets = /(?:'.*?(?<!\\)')|(\(|\))/g;
 const reg_esi_condition =
-  /(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)')|(!=|={2}|=~|<=|>=|>|<)/g;
+  /(?:(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)'))\s*(!=|={2}|=~|<=|>=|>|<)\s*(?:(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)'))/;
 
 /**
  * Evaluates esi Vars within when tag conditional statements
@@ -152,33 +152,15 @@ async function _esi_condition_lexer(condition: string): Promise<boolean> {
     "!": "!",
   };
 
-  let left: number | string | null = null;
-  let right: number | string | null = null;
-  let op: string | null = null;
-  const setLR = function (value: number | string): void {
-    left !== null ? (right = value) : (left = value);
-  };
-
-  const tokensSplit = condition.matchAll(reg_esi_condition);
-  for (const token of tokensSplit) {
-    const number = token[1];
-    const string = token[2];
-    const operator = token[3];
-
-    if (number) {
-      setLR(number);
-    } else if (string) {
-      setLR(string);
-    } else if (operator) {
-      op = op_replacements[operator] || operator;
-    }
-
-    if (left !== null && right !== null && op !== null) {
-      return esiConditionTester(left, right, op);
-    }
+  const tokensSplit = condition.match(reg_esi_condition);
+  if (tokensSplit == null) {
+    return false;
   }
 
-  return false;
+  const left = tokensSplit[1] || tokensSplit[2];
+  const op = op_replacements[tokensSplit[3]] || tokensSplit[3];
+  const right = tokensSplit[4] || tokensSplit[5];
+  return esiConditionTester(left, right, op);
 }
 
 /**
