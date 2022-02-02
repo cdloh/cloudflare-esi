@@ -255,18 +255,19 @@ async function esi_seperator_splitter(condition: string): Promise<boolean> {
       negatorySeperator = !negatorySeperator;
     }
 
+    if (valid == null) {
+      return res;
+    }
+
     switch (seperator) {
       case "&":
       case "&&":
-        return (valid as boolean) && res;
+        return valid && res;
       case "||":
       case "|":
         return valid || res;
     }
-    if (valid == null) {
-      return res;
-    }
-    return valid as boolean;
+    return valid;
   };
 
   const tokensSplit = condition.matchAll(reg_esi_seperator);
