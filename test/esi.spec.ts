@@ -897,6 +897,15 @@ test("TEST 17: choose - when - test, conditional syntax", async () => {
     "$(HTTP_ACCEPT_LANGUAGE{gb}) == 'true'",
     "$(HTTP_ACCEPT_LANGUAGE{fr}) == 'false'",
     "$(HTTP_ACCEPT_LANGUAGE{fr}) == 'true'",
+    "!(1>2) | 1 > 2",
+    "1 > 2 && 2 == 2",
+    "2 == 2",
+    "(1==1) && (1==2) || (1==1)",
+    `((1==1) && (1==1) || (1==2)) && ((1==1) || ((1==2) && (1==1)))`,
+    `(((1==1) && (1==1)) || (1==2) && !(1==1))`,
+    `((1==1) && !(1==2)) && (1==1) && !(1==2)`,
+    `1==1) && !(1==2)) && (1==1) && !(1==2)`,
+    `1 =~ 2`,
   ];
   const url = `/esi/test-17?msg=hello&msg2=hel'lo`;
   routeHandler.add(`/esi/test-17?msg=hello&msg2=hel%27lo`, function (req, res) {
@@ -947,6 +956,15 @@ Failed
 Failed
 true == 'true'
 false == 'false'
+Failed
+!(1>2) | 1 > 2
+Failed
+2 == 2
+(1==1) && (1==2) || (1==1)
+((1==1) && (1==1) || (1==2)) && ((1==1) || ((1==2) && (1==1)))
+(((1==1) && (1==1)) || (1==2) && !(1==1))
+((1==1) && !(1==2)) && (1==1) && !(1==2)
+Failed
 Failed
 `);
 });

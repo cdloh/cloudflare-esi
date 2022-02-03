@@ -106,7 +106,12 @@ export async function process(
   }
 }
 
+// All of our ESI regexs
 const regexExtractor = /\/(.*?)(?<!\\)\/([a-z]*)/;
+const reg_esi_seperator = /(?:'.*?(?<!\\)')|(\|{1,2}|&{1,2}|!(?!=))/g;
+const reg_esi_brackets = /(?:'.*?(?<!\\)')|(\(|\))/g;
+const reg_esi_condition =
+  /(?:(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)'))\s*(!=|={2}|=~|<=|>=|>|<)\s*(?:(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)'))/;
 
 /**
  * Evaluates esi Vars within when tag conditional statements
@@ -118,7 +123,7 @@ const regexExtractor = /\/(.*?)(?<!\\)\/([a-z]*)/;
 function esi_eval_var_in_when_tag(
   eventData: ESIEventData,
   match: [String: string, ...args: string[]]
-) {
+): string {
   const varInTag = esi_eval_var(eventData, match);
 
   const number = parseInt(varInTag, 10);
@@ -131,102 +136,214 @@ function esi_eval_var_in_when_tag(
 }
 
 /**
- * Takes a condition string and turns it into javascript to be ran
- * if the condition is invalid returns null otherwise the compiled string
+ * Takes a condition string and splits it into its two sides and operator
+ * passes that to the tester and returns the result
  *
- * @param {string} condition conditional string to build out
- * @returns {null[] | [boolean, string]} valid condition compiled or null
+ * @param {string} condition conditional string to split
+ * @returns {boolean} condition result
  */
-async function _esi_condition_lexer(condition: string) {
-  const reg_esi_condition =
-    /(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)')|(!=|!|\|{1,2}|&{1,2}|={2}|=~|\(|\)|<=|>=|>|<)/g;
+async function _esi_condition_lexer(condition: string): Promise<boolean> {
   const op_replacements: { [key: string]: string } = {
     "!=": "!==",
-    "|": " || ",
-    "&": " && ",
-    "||": " || ",
-    "&&": " && ",
-    "!": " ! ",
+    "|": "||",
+    "&": "&&",
+    "||": "||",
+    "&&": "&&",
+    "!": "!",
   };
 
-  const lexer_rules: { [key: string]: { [key: string]: boolean } } = {
-    number: {
-      nil: true,
-      operator: true,
-    },
-    string: {
-      nil: true,
-      operator: true,
-    },
-    operator: {
-      nil: true,
-      number: true,
-      string: true,
-      operator: true,
-    },
+  const tokensSplit = condition.match(reg_esi_condition);
+  if (tokensSplit == null) {
+    return false;
+  }
+
+  const left = tokensSplit[1] || tokensSplit[2];
+  const op = op_replacements[tokensSplit[3]] || tokensSplit[3];
+  const right = tokensSplit[4] || tokensSplit[5];
+  return esiConditionTester(left, right, op);
+}
+
+/**
+ * Takes a condition broken down into an a, b & operator and tests the data
+ * returns the result
+ *
+ * @param {string | number} left conditional left
+ * @param {string | number} right conditional right
+ * @param {string} operator operator to compare
+ * @returns {boolean} condition result
+ */
+function esiConditionTester(
+  left: string,
+  right: string,
+  operator: string
+): boolean {
+  switch (operator) {
+    case "==":
+    case "===":
+      return left === right;
+    case "!==":
+      return left !== right;
+    case ">=":
+      return left >= right;
+    case "<=":
+      return left <= right;
+    case "<":
+      return left < right;
+    case ">":
+      return left > right;
+    case "=~": {
+      const regex = right.match(regexExtractor);
+      if (!regex) return false;
+      // Bloody javascript!
+      // Gotta cleanup some escaping here
+      // Only have to do it for regex'd strings
+      // As normal comparison strings should be escaped the same (need to be to be equal)
+      left = left.replace(/\\"/g, '"');
+      left = left.replace(/\\'/g, "'");
+      left = left.replace(/\\\\/g, "\\");
+      const reg = new RegExp(regex[1], regex[2]);
+      return reg.test(left);
+    }
+  }
+  return false;
+}
+
+/**
+ * Takes a condition string and splits it into parts splitting along a seperator
+ * seperators are logical seperators ie `|` or `&`
+ * passes the splits along to ${_esi_condition_lexer} and then
+ * returns the result of the condition after comparing the splits
+ * against their logical seperators
+ *
+ * @param {string} condition conditional string to split
+ * @returns {boolean} condition result
+ */
+async function esi_seperator_splitter(condition: string): Promise<boolean> {
+  let startingIndex = 0;
+  let negatorySeperator = false;
+  let prevSeperator = "";
+  let valid: boolean | null = null;
+  const handleString = async function (str: string) {
+    if (str == "false" || str == "true") {
+      return str === "true";
+    } else {
+      return await _esi_condition_lexer(str);
+    }
+  };
+  const validityCheck = function (res: boolean, seperator: string): boolean {
+    if (negatorySeperator) {
+      res = !res;
+      negatorySeperator = !negatorySeperator;
+    }
+
+    if (valid == null) {
+      return res;
+    }
+
+    switch (seperator) {
+      case "&":
+      case "&&":
+        return valid && res;
+      case "||":
+      case "|":
+        return valid || res;
+    }
+    return valid;
   };
 
-  const tokens: Array<string> = [];
-  let prev_type = "nil";
-  let expectingPattern = false;
+  const tokensSplit = condition.matchAll(reg_esi_seperator);
 
-  const tokensSplit = condition.matchAll(reg_esi_condition);
   for (const token of tokensSplit) {
-    const number = token[1];
-    const string = token[2];
-    const operator = token[3];
-    let token_type = "nil";
+    if (!token[1]) continue;
+    const seperator = token[1];
 
-    if (number) {
-      token_type = "number";
-      tokens.push(number);
-    } else if (string) {
-      token_type = "string";
-      if (expectingPattern) {
-        const regex = string.match(regexExtractor);
-        if (!regex) {
-          return null;
-        } else {
-          const pattern = regex[1];
-          const options = regex[2];
-          const cmpString = tokens.pop();
-
-          // tokens.push(`(${cmpString}.search(/${pattern}/${options}) !== -1)`)
-          tokens.push(`/${pattern}/${options}.test(${cmpString})`);
-        }
-        expectingPattern = false;
-      } else {
-        tokens.push(`'${string}'`);
-      }
-    } else if (operator) {
-      token_type = "operator";
-      if (operator == "=~") {
-        if (prev_type == "operator") {
-          return null;
-        } else {
-          expectingPattern = true;
-        }
-      } else {
-        tokens.push(op_replacements[operator] || operator);
-      }
+    // Negatory seperator!
+    if (seperator == "!") {
+      negatorySeperator = !negatorySeperator;
+      continue;
     }
 
-    if (prev_type !== "nil") {
-      if (!lexer_rules[prev_type][token_type]) {
-        return null;
+    const conditionBefore = condition
+      .substring(startingIndex, token.index)
+      .trim();
+
+    const res = await handleString(conditionBefore);
+    valid = validityCheck(res, prevSeperator);
+
+    prevSeperator = seperator;
+    // Move onto the next one
+    startingIndex = (token.index as number) + seperator.length;
+  }
+
+  const finalRes = await handleString(
+    condition.substring(startingIndex).trim()
+  );
+  valid = validityCheck(finalRes, prevSeperator);
+
+  return valid;
+}
+
+/**
+ * Takes a condition string and splits it into seperate parts based off
+ * brackets amd passes the splits along to ${esi_seperator_splitter} and then
+ * returns the result of the condition
+ *
+ * @param {string} condition conditional string to split
+ * @returns {boolean} condition result
+ */
+async function esi_bracket_splitter(condition: string): Promise<boolean> {
+  let parsedPoint = 0;
+  let startingIndex = 0;
+  let endIndex = -1;
+  let depth = 0;
+  let conditionAfter: null | string = null;
+  const fullExpression: string[] = [];
+
+  const tokensSplit = condition.matchAll(reg_esi_brackets);
+
+  for (const token of tokensSplit) {
+    if (!token[1]) continue;
+    const bracket = token[1];
+    if (bracket == "(") {
+      if (depth == 0) startingIndex = token.index as number;
+      depth = depth + 1;
+    }
+    if (bracket == ")") {
+      // bail out if its invalid depth
+      if (depth == 0) return false;
+      depth = depth - 1;
+
+      // Right we have a full bracketed set
+      if (depth == 0) {
+        endIndex = token.index as number;
+        fullExpression.push(condition.substring(parsedPoint, startingIndex));
+        const conditionBracketed = condition.substring(
+          startingIndex + 1,
+          endIndex
+        );
+
+        // Loop it back to see if there is another bracket inside
+        const bracketResult = await esi_bracket_splitter(conditionBracketed);
+        fullExpression.push(bracketResult.toString());
+
+        // Grab anything that is left
+        conditionAfter = condition.substring(endIndex + 1);
+
+        // Know were we are up too
+        parsedPoint = endIndex + 1;
       }
     }
-    // Derefence it
-    prev_type = `${token_type}`;
   }
 
-  // If we havent got a regex yet but we're expecting one
-  // fail.
-  if (expectingPattern) {
-    return null;
+  if (endIndex == -1) {
+    fullExpression.push(condition);
+  }
+  if (conditionAfter) {
+    fullExpression.push(conditionAfter);
   }
 
-  return tokens.join(" ");
+  const condResult = await esi_seperator_splitter(fullExpression.join(""));
+  return condResult;
 }
 
 /**
@@ -242,19 +359,5 @@ async function _esi_evaluate_condition(
 ): Promise<boolean> {
   // Check for variables
   condition = replace_vars(esiData, condition, esi_eval_var_in_when_tag);
-
-  const compiledCondition = await _esi_condition_lexer(condition);
-
-  if (!compiledCondition) {
-    return false;
-  }
-
-  try {
-    const ret: boolean = Function(
-      `"use strict"; return( ${compiledCondition} )`
-    )();
-    return ret;
-  } catch (err) {
-    return false;
-  }
+  return await esi_bracket_splitter(condition);
 }

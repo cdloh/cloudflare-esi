@@ -42,7 +42,13 @@
       "jsdoc"
     ],
     "rules": {
-      "jsdoc/no-undefined-types": 0
+      "jsdoc/no-undefined-types": 0,
+      "no-new-func": [
+        "error"
+      ],
+      "no-eval": [
+        "error"
+      ]
     }
   },
   "devDependencies": {
