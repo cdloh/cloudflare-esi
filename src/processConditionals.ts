@@ -143,22 +143,13 @@ function esi_eval_var_in_when_tag(
  * @returns {boolean} condition result
  */
 async function _esi_condition_lexer(condition: string): Promise<boolean> {
-  const op_replacements: { [key: string]: string } = {
-    "!=": "!==",
-    "|": "||",
-    "&": "&&",
-    "||": "||",
-    "&&": "&&",
-    "!": "!",
-  };
-
   const tokensSplit = condition.match(reg_esi_condition);
   if (tokensSplit == null) {
     return false;
   }
 
   const left = tokensSplit[1] || tokensSplit[2];
-  const op = op_replacements[tokensSplit[3]] || tokensSplit[3];
+  const op = tokensSplit[3];
   const right = tokensSplit[4] || tokensSplit[5];
   return esiConditionTester(left, right, op);
 }
@@ -181,6 +172,7 @@ function esiConditionTester(
     case "==":
     case "===":
       return left === right;
+    case "!=":
     case "!==":
       return left !== right;
     case ">=":
