@@ -111,7 +111,7 @@ const regexExtractor = /\/(.*?)(?<!\\)\/([a-z]*)/;
 const reg_esi_seperator = /(?:'.*?(?<!\\)')|(\|{1,2}|&{1,2}|!(?!=))/g;
 const reg_esi_brackets = /(?:'.*?(?<!\\)')|(\(|\))/g;
 const reg_esi_condition =
-  /(?:(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)'))\s*(!=|={2}|=~|<=|>=|>|<)\s*(?:(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)'))/;
+  /(?:(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)'))\s*(!=|==|=~|<=|>=|>|<)\s*(?:(\d+(?:\.\d+)?)|(?:'(.*?)(?<!\\)'))/;
 
 /**
  * Evaluates esi Vars within when tag conditional statements
@@ -296,7 +296,6 @@ async function esi_bracket_splitter(condition: string): Promise<boolean> {
   let startingIndex = 0;
   let endIndex = -1;
   let depth = 0;
-  let conditionAfter: null | string = null;
   const fullExpression: string[] = [];
 
   const tokensSplit = condition.matchAll(reg_esi_brackets);
@@ -326,24 +325,20 @@ async function esi_bracket_splitter(condition: string): Promise<boolean> {
         const bracketResult = await esi_bracket_splitter(conditionBracketed);
         fullExpression.push(bracketResult.toString());
 
-        // Grab anything that is left
-        conditionAfter = condition.substring(endIndex + 1);
-
         // Know were we are up too
         parsedPoint = endIndex + 1;
       }
     }
   }
 
+  // If we didnt have any then push it all along
+  // Otherwise push the leftovers and return
   if (endIndex == -1) {
-    fullExpression.push(condition);
+    return await esi_seperator_splitter(condition);
+  } else {
+    fullExpression.push(condition.substring(endIndex + 1));
+    return await esi_seperator_splitter(fullExpression.join(""));
   }
-  if (conditionAfter) {
-    fullExpression.push(conditionAfter);
-  }
-
-  const condResult = await esi_seperator_splitter(fullExpression.join(""));
-  return condResult;
 }
 
 /**
