@@ -102,10 +102,7 @@ export type customESIVars = {
 export type customESIVarsFunction = (
   request: Request
 ) => Promise<customESIVars>;
-export type fetchFunction = (
-  request: string | Request,
-  requestInitr?: Request | RequestInit | undefined
-) => Promise<Response>;
+export type fetchFunction = (request: string | Request) => Promise<Response>;
 
 const processorToken = "ESI";
 const processorVersion = 1.0;
