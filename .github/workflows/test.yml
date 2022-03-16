@@ -40,3 +40,7 @@ jobs:
           node-version: ${{ matrix.node }}
       - run: npm ci
       - run: npm test
+      - name: Coverage
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./coverage/coverage-final.json
