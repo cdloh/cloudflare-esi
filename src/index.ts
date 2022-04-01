@@ -179,7 +179,7 @@ export class esi {
     ) {
       const resp = new Response(response.body, response);
       // We set the URL manually here as it doesn't come across from the copy˛
-      Object.defineProperty(resp, 'url', { value: response.url })
+      Object.defineProperty(resp, "url", { value: response.url });
       return resp;
     }
 
@@ -190,7 +190,7 @@ export class esi {
     // writable side, this response will read from it.
     const mutResponse = new Response(readable, response);
     // We set the URL manually here as it doesn't come across from the copy˛
-    Object.defineProperty(mutResponse, 'url', { value: response.url })
+    Object.defineProperty(mutResponse, "url", { value: response.url });
 
     // Zero downstream lifetime
     mutResponse.headers.set("Cache-Control", "private, max-age=0");
