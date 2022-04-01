@@ -130,6 +130,9 @@ export class esi {
     // Hit our limit? Bail out
     const limit = this.options.recursionLimit as number;
     if (recursion >= limit) {
+      // We dont have to set the URL value here
+      // As we're going to get here in a ESI loop
+      // And the parent value will have a URL set
       return new Response("");
     }
 
@@ -174,7 +177,10 @@ export class esi {
       !this.validSurrogateControl(response) ||
       (await canDelegateToSurrogate(origRequest, this.options))
     ) {
-      return new Response(response.body, response);
+      const resp = new Response(response.body, response);
+      // We set the URL manually here as it doesn't come across from the copy˛
+      Object.defineProperty(resp, 'url', { value: response.url })
+      return resp;
     }
 
     const { readable, writable } = new TransformStream();
@@ -183,6 +189,8 @@ export class esi {
     // side of the `TransformStream` as the body. As we write to the
     // writable side, this response will read from it.
     const mutResponse = new Response(readable, response);
+    // We set the URL manually here as it doesn't come across from the copy˛
+    Object.defineProperty(mutResponse, 'url', { value: response.url })
 
     // Zero downstream lifetime
     mutResponse.headers.set("Cache-Control", "private, max-age=0");
