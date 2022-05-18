@@ -39,7 +39,7 @@ export async function process(
 
     if (includeMatch && includeMatch.index !== undefined) {
       // Push anything from before the tag into the response
-      const before = chunk.substring(retFrom, includeMatch.index);
+      const before = chunk.substring(0, includeMatch.index);
       res.push(evalVars ? replace_vars(eventData, before) : before);
 
       // Keep the remainder for next chunk
