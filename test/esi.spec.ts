@@ -1828,3 +1828,51 @@ test("TEST 48: POST With body", async () => {
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(postBody);
 });
+
+test("TEST 48: Mutliple ESI Includes next to each other", async () => {
+  const url = `/esi/test-48`;
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.say("START:");
+    res.say(`<esi:include src="${url}/fragment_1" />`);
+    res.say(`<esi:include src="${url}/fragment_1" />`);
+    res.end(`:END`);
+  });
+  routeHandler.add(
+    `${url}/fragment_1`,
+    function (req, res) {
+      res.writeHead(200, esiHead);
+      res.end(`FRAGMENT`);
+    },
+    { count: 2 }
+  );
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`START:\nFRAGMENT\nFRAGMENT\n:END`);
+});
+
+test("TEST 49: Mutliple ESI Includes next to each other in choose", async () => {
+  const url = `/esi/test-48`;
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.say("START:");
+    res.write('<esi:choose><esi:when test="1 == 2"></esi:when><esi:otherwise>');
+    res.say(`<esi:include src="${url}/fragment_1" />`);
+    res.say(`<esi:include src="${url}/fragment_1" />`);
+    res.write("</esi:otherwise></esi:choose>");
+    res.end(`:END`);
+  });
+  routeHandler.add(
+    `${url}/fragment_1`,
+    function (req, res) {
+      res.writeHead(200, esiHead);
+      res.end(`FRAGMENT`);
+    },
+    { count: 2 }
+  );
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`START:\nFRAGMENT\nFRAGMENT\n:END`);
+});
