@@ -28,6 +28,7 @@ export function create(writer: writerFunction): handleFunction {
 
   return async function (value: string, done: boolean): Promise<void> {
     value = prev_chunk + value;
+    prev_chunk = "";
 
     const parser = new tagParser(value);
     do {
@@ -39,7 +40,6 @@ export function create(writer: writerFunction): handleFunction {
       if (tag && tag.whole) {
         writer(tag.whole, true);
         value = after as string;
-        prev_chunk = "";
       } else if (tag && !tag.whole) {
         prev_chunk = tag.opening.tag + after;
         break;
