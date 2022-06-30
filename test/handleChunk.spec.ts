@@ -137,3 +137,30 @@ test("Should print our full chunk even if it's an imcomplete tag", async () => {
   await handleChunk(testString2, true);
   expect(write).toEqual(2);
 });
+
+test("Should only add hint tag on the next chunk", async () => {
+  const testString1 = "BEFORE TEXT<!--";
+  const testString2 = "help -->dfafdsafdsa";
+  const testString3 = "AFTER TEXT";
+  let write = 0;
+  const writer = function (string: string, hasESI: boolean) {
+    write++;
+    if (write == 1) {
+      expect(hasESI).toBeFalsy();
+      expect(string).toEqual("BEFORE TEXT");
+    } else if (write == 2) {
+      expect(hasESI).toBeFalsy();
+      expect(string).toEqual("<!--help -->dfafdsafdsa");
+    } else if (write == 3) {
+      expect(hasESI).toBeFalsy();
+      expect(string).toEqual("AFTER TEXT");
+    } else {
+      fail();
+    }
+  };
+  const handleChunk = createHandleChunk(writer);
+  await handleChunk(testString1, false);
+  await handleChunk(testString2, false);
+  await handleChunk(testString3, true);
+  expect(write).toEqual(3);
+});
