@@ -47,7 +47,7 @@ export type ESIVars = {
  * ESI Event Data for the Current Request
  *
  * @property {ESIConfig} config - ESIConfig when class was created
- * @property {Object} headers - All headers of the request uppercased
+ * @property {object} headers - All headers of the request uppercased
  * @property {string} method - Method of the request
  * @property {URLSearchParams} esiArgs - Any ESI Arguments extracted from the URL Search params of the original request
  * Will be a URLSearchParam encoded object
