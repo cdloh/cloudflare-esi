@@ -22,18 +22,19 @@
       "main"
     ],
     "plugins": [
-      "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/changelog",
+      "@semantic-release/github",
+      "@semantic-release/npm",
       [
-        "@semantic-release/github",
+        "@semantic-release/git",
         {
           "assets": [
-            {
-              "path": "dist",
-              "label": "Build Files"
-            }
-          ]
+            "package.json",
+            "package-lock.json",
+            "CHANGELOG.md"
+          ],
+          "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
         }
       ]
     ]
@@ -77,7 +78,9 @@
     "@cloudflare/workers-types": "^3.1.1",
     "@semantic-release/changelog": "^6.0.1",
     "@semantic-release/commit-analyzer": "^9.0.2",
+    "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^8.0.5",
+    "@semantic-release/npm": "^9.0.1",
     "@semantic-release/release-notes-generator": "^10.0.3",
     "@types/jest": "^27.0.2",
     "@typescript-eslint/eslint-plugin": "^5.10.0",
