@@ -252,7 +252,19 @@ test("TEST 5b: Test fragment always issues GET and only inherits correct req hea
   expect(checkSurrogate(res)).toBeTruthy();
   const text = await res.text();
   expect(text).toEqual(
-    `ORIGINAL METHOD: POST\nmethod: GET\nhost: localhost:${port}\nconnection: keep-alive\naccept-encoding: gzip, deflate\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nmf-loop: 1\nsurrogate-capability: cloudflareWorkerESI="ESI/1.0"\nx-esi-parent-uri: http://localhost:${port}/esi/test-5b\nx-esi-recursion-level: 1\n`
+    `ORIGINAL METHOD: POST
+method: GET
+host: localhost:${port}
+connection: keep-alive
+authorization: bar
+cache-control: no-cache
+cookie: foo
+x-esi-parent-uri: http://localhost:${port}/esi/test-5b
+x-esi-recursion-level: 1
+surrogate-capability: cloudflareWorkerESI="ESI/1.0"
+mf-loop: 1
+accept-encoding: gzip, deflate
+`
   );
 });
 
@@ -1680,7 +1692,18 @@ test("TEST 45: Cookies and Authorization propagate to fragment on same domain", 
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `method: GET\nhost: ${testingDetails.hostname}:${testingDetails.port}\nconnection: keep-alive\naccept-encoding: gzip, deflate\nauthorization: bar\ncache-control: no-cache\ncookie: foo\nmf-loop: 1\nsurrogate-capability: cloudflareWorkerESI="ESI/1.0"\nx-esi-parent-uri: http://localhost:${port}/esi/test-45\nx-esi-recursion-level: 1\n`
+    `method: GET
+host: ${testingDetails.hostname}:${testingDetails.port}
+connection: keep-alive
+authorization: bar
+cache-control: no-cache
+cookie: foo
+x-esi-parent-uri: http://localhost:${port}/esi/test-45
+x-esi-recursion-level: 1
+surrogate-capability: cloudflareWorkerESI="ESI/1.0"
+mf-loop: 1
+accept-encoding: gzip, deflate
+`
   );
 });
 
