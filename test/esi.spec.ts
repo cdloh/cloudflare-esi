@@ -1899,3 +1899,17 @@ test("TEST 49: Mutliple ESI Includes next to each other in choose", async () => 
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(`START:\nFRAGMENT\nFRAGMENT\n:END`);
 });
+
+test("TEST 50: Multiple ESI Args make it all the way through", async () => {
+  const url = `/esi/test-48?esi_args1=1&esi_args2=2&esi_args3=3&esi_args4=4`;
+  routeHandler.add("/esi/test-48", function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end("<esi:vars>$(ESI_ARGS)</esi:vars>");
+  });
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(
+    `esi_args1=1&esi_args2=2&esi_args3=3&esi_args4=4`
+  );
+});

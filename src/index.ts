@@ -376,9 +376,13 @@ async function getVars(request: Request): Promise<[Request, ESIVars]> {
     url: new URL(request.url),
   };
 
+  // We create our own array here
+  // because if we use the iterator directly and cleanup a key
+  // it causes the loop to skip one as the iterator doesn't update correctly
   const current = new URL(request.url);
+  const keys = Array.from(current.searchParams.keys());
 
-  for (const key of current.searchParams.keys()) {
+  for (const key of keys) {
     const match = key.match(esiArgsRegex);
     if (match && match[1]) {
       for (const entry of current.searchParams.getAll(key)) {
