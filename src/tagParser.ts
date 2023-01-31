@@ -26,7 +26,7 @@ export class tagParser {
   async next(
     tagname?: string
   ): Promise<[tag | null, string | undefined, string | undefined]> {
-    const tag = await this.findWholeTag(tagname);
+    const tag = this.findWholeTag(tagname);
     let before, after;
 
     if (tag) {
@@ -69,7 +69,7 @@ export class tagParser {
     return new RegExp(`<\\/(${tag})\\s*>`);
   }
 
-  async findWholeTag(tag?: string): Promise<tag | null> {
+  findWholeTag(tag?: string): tag | null {
     const markup = this.content.slice(this.pos);
 
     if (!tag) {
