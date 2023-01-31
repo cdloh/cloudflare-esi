@@ -142,7 +142,7 @@ function esi_eval_var_in_when_tag(
  * @param {string} condition conditional string to split
  * @returns {boolean} condition result
  */
-async function _esi_condition_lexer(condition: string): Promise<boolean> {
+function _esi_condition_lexer(condition: string): boolean {
   const op_replacements: { [key: string]: string } = {
     "!=": "!==",
     "|": "||",
@@ -218,16 +218,16 @@ function esiConditionTester(
  * @param {string} condition conditional string to split
  * @returns {boolean} condition result
  */
-async function esi_seperator_splitter(condition: string): Promise<boolean> {
+function esi_seperator_splitter(condition: string): boolean {
   let startingIndex = 0;
   let negatorySeperator = false;
   let prevSeperator = "";
   let valid: boolean | null = null;
-  const handleString = async function (str: string) {
+  const handleString = function (str: string) {
     if (str == "false" || str == "true") {
       return str === "true";
     } else {
-      return await _esi_condition_lexer(str);
+      return _esi_condition_lexer(str);
     }
   };
   const validityCheck = function (res: boolean, seperator: string): boolean {
@@ -267,7 +267,7 @@ async function esi_seperator_splitter(condition: string): Promise<boolean> {
       .substring(startingIndex, token.index)
       .trim();
 
-    const res = await handleString(conditionBefore);
+    const res = handleString(conditionBefore);
     valid = validityCheck(res, prevSeperator);
 
     prevSeperator = seperator;
@@ -275,7 +275,7 @@ async function esi_seperator_splitter(condition: string): Promise<boolean> {
     startingIndex = (token.index as number) + seperator.length;
   }
 
-  const finalRes = await handleString(
+  const finalRes = handleString(
     condition.substring(startingIndex).trim()
   );
   valid = validityCheck(finalRes, prevSeperator);
@@ -291,7 +291,7 @@ async function esi_seperator_splitter(condition: string): Promise<boolean> {
  * @param {string} condition conditional string to split
  * @returns {boolean} condition result
  */
-async function esi_bracket_splitter(condition: string): Promise<boolean> {
+function esi_bracket_splitter(condition: string): boolean {
   let parsedPoint = 0;
   let startingIndex = 0;
   let endIndex = -1;
@@ -322,7 +322,7 @@ async function esi_bracket_splitter(condition: string): Promise<boolean> {
         );
 
         // Loop it back to see if there is another bracket inside
-        const bracketResult = await esi_bracket_splitter(conditionBracketed);
+        const bracketResult = esi_bracket_splitter(conditionBracketed);
         fullExpression.push(bracketResult.toString());
 
         // Know were we are up too
@@ -334,10 +334,10 @@ async function esi_bracket_splitter(condition: string): Promise<boolean> {
   // If we didnt have any then push it all along
   // Otherwise push the leftovers and return
   if (endIndex == -1) {
-    return await esi_seperator_splitter(condition);
+    return esi_seperator_splitter(condition);
   } else {
     fullExpression.push(condition.substring(endIndex + 1));
-    return await esi_seperator_splitter(fullExpression.join(""));
+    return esi_seperator_splitter(fullExpression.join(""));
   }
 }
 
@@ -348,11 +348,11 @@ async function esi_bracket_splitter(condition: string): Promise<boolean> {
  * @param {string} condition condition to test
  * @returns {Promise<boolean>} condition result
  */
-async function _esi_evaluate_condition(
+function _esi_evaluate_condition(
   esiData: ESIEventData,
   condition: string
-): Promise<boolean> {
+): boolean {
   // Check for variables
   condition = replace_vars(esiData, condition, esi_eval_var_in_when_tag);
-  return await esi_bracket_splitter(condition);
+  return esi_bracket_splitter(condition);
 }

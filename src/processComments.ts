@@ -6,7 +6,7 @@ const removeCommentsRegex = /<esi:comment (?:.*?)\/>/gs;
  * @param {string} chunk chunk of text to process
  * @returns {Promise<string>} processed string
  */
-export async function process(chunk: string): Promise<string> {
+export function process(chunk: string): string {
   if (chunk.indexOf("<esi:comment") == -1) {
     return chunk;
   }

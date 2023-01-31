@@ -213,8 +213,8 @@ export class esi {
 
   async handleESI(eventData: ESIEventData, text: string): Promise<string> {
     text = await processEscaping(text);
-    text = await processComments(text);
-    text = await processRemove(text);
+    text = processComments(text);
+    text = processRemove(text);
     text = await processESIVars(eventData, text);
     let vars = false;
     [text, vars] = await processConditionals(eventData, text);
