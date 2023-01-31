@@ -275,9 +275,7 @@ function esi_seperator_splitter(condition: string): boolean {
     startingIndex = (token.index as number) + seperator.length;
   }
 
-  const finalRes = handleString(
-    condition.substring(startingIndex).trim()
-  );
+  const finalRes = handleString(condition.substring(startingIndex).trim());
   valid = validityCheck(finalRes, prevSeperator);
 
   return valid;
