@@ -206,7 +206,7 @@ export class esi {
     mutResponse.headers.delete("Surrogate-Control");
 
     // `streamBody` will free the request context when finished
-    this.streamBody(eventData, response.body, writable);
+    this.streamBody(eventData, response, writable);
 
     return mutResponse;
   }
@@ -236,18 +236,17 @@ export class esi {
 
   async streamBody(
     eventData: ESIEventData,
-    readable: ReadableStream,
+    rsp: Response,
     writable: WritableStream
   ): Promise<void> {
-    const reader = readable.getReader();
     const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
+    const rspTxt = await rsp.text();
 
     // Output
     // pending actions awaiting a response
     const output: Array<Promise<string>> = [];
     let pending: boolean;
-    let ended: boolean;
+    let ended = false;
 
     /**
      * Flushes output to the Writeable Stream
@@ -270,7 +269,9 @@ export class esi {
             // on error
             // Write nothing out
             console.log(e);
-            return "";
+            pending = false;
+            flush_output();
+            return '';
           })
           .then(function (r) {
             const writer = writable.getWriter();
@@ -303,23 +304,10 @@ export class esi {
     const writerBound = writer.bind(this);
 
     const handler = createHandleChunk(writerBound);
-
-    reader.read().then(async function processBlob(blob): Promise<void> {
-      const chunk: ArrayBuffer = blob.value;
-      const done: boolean = blob.done;
-      // decode it
-      const decodedChunk: string = decoder.decode(chunk, { stream: true });
-      await handler(decodedChunk, done);
-
-      // we're done bail out
-      if (done) {
-        ended = true;
-        flush_output();
-        return;
-      }
-
-      return reader.read().then(processBlob);
-    });
+    await handler(rspTxt, true)
+    ended = true;
+    flush_output();
+    return;
   }
 
   validContentType(response: Response): boolean {
