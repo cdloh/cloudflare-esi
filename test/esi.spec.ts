@@ -1911,3 +1911,51 @@ test("TEST 50: Multiple ESI Args make it all the way through", async () => {
     `esi_args1=1&esi_args2=2&esi_args3=3&esi_args4=4`,
   );
 });
+
+test("TEST 51: Blank ESI source should be skipped over", async () => {
+  const url = `/esi/test-51`;
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.say("START:");
+    res.say(`<esi:include src="${url}/fragment_1" />`);
+    res.say(`<esi:include src="" />`);
+    res.say(`<esi:include src="${url}/fragment_1" />`);
+    res.end(`:END`);
+  });
+  routeHandler.add(
+    `${url}/fragment_1`,
+    function (req, res) {
+      res.writeHead(200, esiHead);
+      res.end(`FRAGMENT`);
+    },
+    { count: 2 },
+  );
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(
+    `START:\nFRAGMENT\n<esi:include src="" />\nFRAGMENT\n:END`,
+  );
+});
+
+test("TEST 52: ESI drops responses with no body", async () => {
+  const url = `/esi/test-52`;
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.say("START:");
+    res.say(`<esi:include src="${url}/fragment_1" />`);
+    res.end(`:END`);
+  });
+  routeHandler.add(
+    `${url}/fragment_1`,
+    function (req, res) {
+      res.writeHead(302, { Location: "http://localhost" });
+      res.end();
+    },
+    { count: 1 },
+  );
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`START:\n\n:END`);
+});
