@@ -16,7 +16,7 @@ test("Find next tag", async () => {
 
 describe("Default next tag finds esi", () => {
   const parser = new tagParser(
-    "content-before<esi:foo>inside</esi:foo>content-after<!--esi comment-->last"
+    "content-before<esi:foo>inside</esi:foo>content-after<!--esi comment-->last",
   );
   test("first tag", async () => {
     const [tag, parserBefore, parserAfter] = await parser.next();
@@ -46,7 +46,7 @@ describe("Default next tag finds esi", () => {
 
 test("Finds a unclosed tag", async () => {
   const parser = new tagParser(
-    "content-before<esi:foo>inside content-after<!--esi comment-->last"
+    "content-before<esi:foo>inside content-after<!--esi comment-->last",
   );
   const [tag, parserBefore, parserAfter] = await parser.next();
   expect(tag).toEqual({
@@ -62,7 +62,7 @@ test("Finds a unclosed tag", async () => {
 
 test("Finds a closed tag", async () => {
   const parser = new tagParser(
-    'content-before<esi:comment test="12345" />content-after'
+    'content-before<esi:comment test="12345" />content-after',
   );
   const [tag, parserBefore, parserAfter] = await parser.next();
   expect(tag).toEqual({
@@ -78,10 +78,10 @@ test("Finds a closed tag", async () => {
 
 test("Finds correct tag after an illegal closure", async () => {
   const parser = new tagParser(
-    `BEFORE CONTENT<esi:when test="$(QUERY_STRING{c}) == 'c'">c<esi:choose></esi:vars alt="BAD ILLEGAL NESTING"><esi:when test="$(QUERY_STRING{l1d}) == 'l1d'">l1d</esi:when><esi:when test="$(QUERY_STRING{l1e}) == 'l1e'">l1e<esi:choose><esi:when test="$(QUERY_STRING{l2f}) == 'l2f'">l2f</esi:when><esi:otherwise>l2 OTHERWISE</esi:otherwise></esi:choose></esi:when><esi:otherwise>l1 OTHERWISE<esi:choose><esi:when test="$(QUERY_STRING{l2g}) == 'l2g'">l2g</esi:when></esi:when alt="MORE BAD ILLEGAL NESTING"></esi:choose></esi:otherwise></esi:choose></esi:when>AFTER`
+    `BEFORE CONTENT<esi:when test="$(QUERY_STRING{c}) == 'c'">c<esi:choose></esi:vars alt="BAD ILLEGAL NESTING"><esi:when test="$(QUERY_STRING{l1d}) == 'l1d'">l1d</esi:when><esi:when test="$(QUERY_STRING{l1e}) == 'l1e'">l1e<esi:choose><esi:when test="$(QUERY_STRING{l2f}) == 'l2f'">l2f</esi:when><esi:otherwise>l2 OTHERWISE</esi:otherwise></esi:choose></esi:when><esi:otherwise>l1 OTHERWISE<esi:choose><esi:when test="$(QUERY_STRING{l2g}) == 'l2g'">l2g</esi:when></esi:when alt="MORE BAD ILLEGAL NESTING"></esi:choose></esi:otherwise></esi:choose></esi:when>AFTER`,
   );
   const [tag, parserBefore, parserAfter] = await parser.next(
-    "esi:when|esi:otherwise"
+    "esi:when|esi:otherwise",
   );
   expect(tag).toEqual({
     opening: {
@@ -100,7 +100,7 @@ test("Finds correct tag after an illegal closure", async () => {
 
 test("Find tag with attributes", async () => {
   const parser = new tagParser(
-    "content-before<foo attr='value' attr2='value2'>inside</foo>content-after"
+    "content-before<foo attr='value' attr2='value2'>inside</foo>content-after",
   );
   const [tag, parserBefore, parserAfter] = await parser.next("foo");
   expect(tag).toEqual({
@@ -117,7 +117,7 @@ test("Find tag with attributes", async () => {
 describe("Find nested tags", () => {
   test("first tag", async () => {
     const parser = new tagParser(
-      "content-before<foo>inside-foo<bar>inside-bar</bar>after-bar<foo>inside-foo-2</foo></foo>content-after"
+      "content-before<foo>inside-foo<bar>inside-bar</bar>after-bar<foo>inside-foo-2</foo></foo>content-after",
     );
     const [tag, parserBefore, parserAfter] = await parser.next("foo");
     expect(tag).toEqual({
@@ -132,7 +132,7 @@ describe("Find nested tags", () => {
   });
   test("second tag", async () => {
     const parser = new tagParser(
-      "content-before<foo>inside-foo<bar>inside-bar</bar>after-bar<foo>inside-foo-2</foo></foo>content-after"
+      "content-before<foo>inside-foo<bar>inside-bar</bar>after-bar<foo>inside-foo-2</foo></foo>content-after",
     );
     const [tag, parserBefore, parserAfter] = await parser.next("bar");
     expect(tag).toEqual({
@@ -144,7 +144,7 @@ describe("Find nested tags", () => {
     });
     expect(parserBefore).toEqual("content-before<foo>inside-foo");
     expect(parserAfter).toEqual(
-      "after-bar<foo>inside-foo-2</foo></foo>content-after"
+      "after-bar<foo>inside-foo-2</foo></foo>content-after",
     );
   });
 });

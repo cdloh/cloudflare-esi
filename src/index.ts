@@ -100,7 +100,7 @@ export type customESIVars = {
   [key: string]: string | { [key: string]: string };
 };
 export type customESIVarsFunction = (
-  request: Request
+  request: Request,
 ) => Promise<customESIVars>;
 export type fetchFunction = (request: string | Request) => Promise<Response>;
 
@@ -115,7 +115,7 @@ export class esi {
   constructor(
     options?: ESIConfig,
     customESIFunction?: customESIVarsFunction,
-    fetcher = fetch
+    fetcher = fetch as fetchFunction,
   ) {
     const defaultConfig = {
       recursionLimit: 10,
@@ -225,7 +225,7 @@ export class esi {
       text,
       vars,
       this.fetcher,
-      this.esiFunction
+      this.esiFunction,
     );
 
     return text;
@@ -237,7 +237,7 @@ export class esi {
   async streamBody(
     eventData: ESIEventData,
     readable: ReadableStream,
-    writable: WritableStream
+    writable: WritableStream,
   ): Promise<void> {
     const reader = readable.getReader();
     const encoder = new TextEncoder();

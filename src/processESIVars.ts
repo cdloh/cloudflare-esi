@@ -17,7 +17,7 @@ const esiLessArrow = />/g;
  */
 export async function process(
   eventData: ESIEventData,
-  chunk: string
+  chunk: string,
 ): Promise<string> {
   if (chunk.indexOf("esi:vars") == -1) {
     return chunk;
@@ -31,7 +31,7 @@ export async function process(
 
 type replaceFunction = (
   eventData: ESIEventData,
-  var_match: [String: string, ...args: string[]]
+  var_match: [String: string, ...args: string[]],
 ) => string;
 
 /**
@@ -46,7 +46,7 @@ type replaceFunction = (
 export function replace_vars(
   eventData: ESIEventData,
   str: string,
-  cb: replaceFunction = esi_eval_var
+  cb: replaceFunction = esi_eval_var,
 ): string {
   return str.replace(esiVarsPatternRegex, function (...match) {
     return cb(eventData, match);
@@ -63,7 +63,7 @@ export function replace_vars(
  */
 export function esi_eval_var(
   eventData: ESIEventData,
-  var_match: [String: string, ...args: string[]]
+  var_match: [String: string, ...args: string[]],
 ): string {
   let escape = true;
   const var_name = var_match[1];
@@ -93,7 +93,7 @@ export function esi_eval_var(
  */
 function _esi_eval_var(
   eventData: ESIEventData,
-  var_pattern: [String: string, ...args: string[]]
+  var_pattern: [String: string, ...args: string[]],
 ): string {
   const var_name = var_pattern[1] || "";
   const key = var_pattern[2] == "" ? null : var_pattern[2];

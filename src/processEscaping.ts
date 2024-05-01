@@ -9,7 +9,7 @@ import { tagParser } from "./tagParser";
  */
 export async function process(
   chunk: string,
-  res: Array<string> = []
+  res: Array<string> = [],
 ): Promise<string> {
   const parser = new tagParser(chunk);
   let hasEscaping = false;
