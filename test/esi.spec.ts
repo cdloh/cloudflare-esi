@@ -162,7 +162,7 @@ test("TEST 3b: Test comments are removed. Nested.", async () => {
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      'BEFORE <esi:choose><esi:when test="1>2" ></esi:when><esi:otherwise><esi:remove> FIRST </esi:remove><esi:remove> SECOND </esi:remove></esi:otherwise></esi:choose> AFTER'
+      'BEFORE <esi:choose><esi:when test="1>2" ></esi:when><esi:otherwise><esi:remove> FIRST </esi:remove><esi:remove> SECOND </esi:remove></esi:otherwise></esi:choose> AFTER',
     );
   });
   const res = await makeRequest(url);
@@ -196,7 +196,7 @@ test("TEST 5: Include fragment", async () => {
   const url = `/esi/test-5`;
   const printFragment = function (
     req: http.IncomingMessage,
-    res: testResponse
+    res: testResponse,
   ) {
     const url = new URL(req.url as string, `http://localhost:${port}`);
     const query = url.searchParams.get("a") ? url.searchParams.get("a") : "";
@@ -210,7 +210,7 @@ test("TEST 5: Include fragment", async () => {
     res.write(`<esi:include src="${url}/fragment_1?a=2" />`);
     res.write("3");
     res.end(
-      `<esi:include src="http://localhost:${port}${url}/fragment_1?a=3" />`
+      `<esi:include src="http://localhost:${port}${url}/fragment_1?a=3" />`,
     );
   });
   routeHandler.add(`${url}/fragment_1`, printFragment);
@@ -220,7 +220,7 @@ test("TEST 5: Include fragment", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `1\nFRAGMENT: \n2\nFRAGMENT: 2\n3FRAGMENT: 3\n`
+    `1\nFRAGMENT: \n2\nFRAGMENT: 2\n3FRAGMENT: 3\n`,
   );
 });
 
@@ -264,7 +264,7 @@ x-esi-recursion-level: 1
 surrogate-capability: cloudflareWorkerESI="ESI/1.0"
 mf-loop: 1
 accept-encoding: gzip, deflate
-`
+`,
   );
 });
 
@@ -273,19 +273,19 @@ test("TEST 5c: Include fragment with absolute URI, schemaless, and no path", asy
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.say(
-      `<esi:include src="${testingDetails.proto}//${testingDetails.hostname}:${testingDetails.port}${url}/fragment_1" />`
+      `<esi:include src="${testingDetails.proto}//${testingDetails.hostname}:${testingDetails.port}${url}/fragment_1" />`,
     );
     res.say(
-      `<esi:include src="//${testingDetails.hostname}:${testingDetails.port}${url}/fragment_1" />`
+      `<esi:include src="//${testingDetails.hostname}:${testingDetails.port}${url}/fragment_1" />`,
     );
     res.say(
-      `<esi:include src="${testingDetails.proto}//${testingDetails.hostname}:${testingDetails.port}/" />`
+      `<esi:include src="${testingDetails.proto}//${testingDetails.hostname}:${testingDetails.port}/" />`,
     );
     res.say(
-      `<esi:include src="${testingDetails.proto}//${testingDetails.hostname}:${testingDetails.port}" />`
+      `<esi:include src="${testingDetails.proto}//${testingDetails.hostname}:${testingDetails.port}" />`,
     );
     res.end(
-      `<esi:include src="//${testingDetails.hostname}:${testingDetails.port}" />`
+      `<esi:include src="//${testingDetails.hostname}:${testingDetails.port}" />`,
     );
   });
   routeHandler.add(
@@ -293,21 +293,21 @@ test("TEST 5c: Include fragment with absolute URI, schemaless, and no path", asy
     function (req, res) {
       res.end("ROOT FRAGMENT");
     },
-    { count: 3 }
+    { count: 3 },
   );
   routeHandler.add(
     `${url}/fragment_1`,
     function (req, res) {
       res.end("FRAGMENT");
     },
-    { count: 2 }
+    { count: 2 },
   );
 
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `FRAGMENT\nFRAGMENT\nROOT FRAGMENT\nROOT FRAGMENT\nROOT FRAGMENT`
+    `FRAGMENT\nFRAGMENT\nROOT FRAGMENT\nROOT FRAGMENT\nROOT FRAGMENT`,
   );
 });
 
@@ -333,7 +333,7 @@ test("TEST 6: Include multiple fragments, in correct order.", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `FRAGMENT_3\nMID LINE FRAGMENT_1\nFRAGMENT_2\n`
+    `FRAGMENT_3\nMID LINE FRAGMENT_1\nFRAGMENT_2\n`,
   );
 });
 
@@ -356,7 +356,7 @@ test("TEST 7b: Leave instructions intact if ESI delegation is enabled - slow pat
 });
 
 test.todo(
-  "TEST 7c: Leave instructions intact if ESI delegation is enabled - fast path"
+  "TEST 7c: Leave instructions intact if ESI delegation is enabled - fast path",
 );
 
 test("TEST 7d: Leave instructions intact if ESI delegation is enabled by IP on the slow path.", async () => {
@@ -379,7 +379,7 @@ test("TEST 7d: Leave instructions intact if ESI delegation is enabled by IP on t
 });
 
 test.todo(
-  "TEST 7e: Leave instructions intact if ESI delegation is enabled by IP on the fast path."
+  "TEST 7e: Leave instructions intact if ESI delegation is enabled by IP on the fast path.",
 );
 
 test("TEST 7f: Leave instructions intact if allowed types does not match on the slow path.", async () => {
@@ -397,7 +397,7 @@ test("TEST 7f: Leave instructions intact if allowed types does not match on the 
 });
 
 test.todo(
-  "TEST 7g: Leave instructions intact if allowed types does not match (fast path)"
+  "TEST 7g: Leave instructions intact if allowed types does not match (fast path)",
 );
 
 test("TEST 7h: Compile instructions if ESI delegation is enabled by IP but no Capability header sent.", async () => {
@@ -449,25 +449,25 @@ test("TEST 9: Variable evaluation", async () => {
     res.writeHead(200, esiHead);
     res.say("HTTP_COOKIE: <esi:vars>$(HTTP_COOKIE)</esi:vars>");
     res.say(
-      "HTTP_COOKIE{SQ_SYSTEM_SESSION}: <esi:vars>$(HTTP_COOKIE{SQ_SYSTEM_SESSION})</esi:vars>"
+      "HTTP_COOKIE{SQ_SYSTEM_SESSION}: <esi:vars>$(HTTP_COOKIE{SQ_SYSTEM_SESSION})</esi:vars>",
     );
     res.say("<esi:vars>");
     res.say("HTTP_COOKIE: $(HTTP_COOKIE)");
     res.say(
-      "HTTP_COOKIE{SQ_SYSTEM_SESSION}: $(HTTP_COOKIE{SQ_SYSTEM_SESSION})"
+      "HTTP_COOKIE{SQ_SYSTEM_SESSION}: $(HTTP_COOKIE{SQ_SYSTEM_SESSION})",
     );
     res.say(
-      "HTTP_COOKIE{SQ_SYSTEM_SESSION_TYPO}: $(HTTP_COOKIE{SQ_SYSTEM_SESSION_TYPO}|'default message')"
+      "HTTP_COOKIE{SQ_SYSTEM_SESSION_TYPO}: $(HTTP_COOKIE{SQ_SYSTEM_SESSION_TYPO}|'default message')",
     );
     res.say("</esi:vars>");
     res.say(
-      "<esi:vars>$(HTTP_COOKIE{SQ_SYSTEM_SESSION})</esi:vars>$(HTTP_COOKIE)<esi:vars>$(QUERY_STRING)</esi:vars>"
+      "<esi:vars>$(HTTP_COOKIE{SQ_SYSTEM_SESSION})</esi:vars>$(HTTP_COOKIE)<esi:vars>$(QUERY_STRING)</esi:vars>",
     );
     res.say(
-      "$(HTTP_X_MANY_HEADERS): <esi:vars>$(HTTP_X_MANY_HEADERS)</esi:vars>"
+      "$(HTTP_X_MANY_HEADERS): <esi:vars>$(HTTP_X_MANY_HEADERS)</esi:vars>",
     );
     res.end(
-      "$(HTTP_X_MANY_HEADERS{2}): <esi:vars>$(HTTP_X_MANY_HEADERS{2})</esi:vars>"
+      "$(HTTP_X_MANY_HEADERS{2}): <esi:vars>$(HTTP_X_MANY_HEADERS{2})</esi:vars>",
     );
   });
 
@@ -480,7 +480,7 @@ test("TEST 9: Variable evaluation", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `HTTP_COOKIE: myvar=foo; SQ_SYSTEM_SESSION=hello\nHTTP_COOKIE{SQ_SYSTEM_SESSION}: hello\n\nHTTP_COOKIE: myvar=foo; SQ_SYSTEM_SESSION=hello\nHTTP_COOKIE{SQ_SYSTEM_SESSION}: hello\nHTTP_COOKIE{SQ_SYSTEM_SESSION_TYPO}: default message\n\nhello$(HTTP_COOKIE)t=1\n$(HTTP_X_MANY_HEADERS): 1, 2, 3, 4, 5, 6=hello\n$(HTTP_X_MANY_HEADERS{2}): 1, 2, 3, 4, 5, 6=hello`
+    `HTTP_COOKIE: myvar=foo; SQ_SYSTEM_SESSION=hello\nHTTP_COOKIE{SQ_SYSTEM_SESSION}: hello\n\nHTTP_COOKIE: myvar=foo; SQ_SYSTEM_SESSION=hello\nHTTP_COOKIE{SQ_SYSTEM_SESSION}: hello\nHTTP_COOKIE{SQ_SYSTEM_SESSION_TYPO}: default message\n\nhello$(HTTP_COOKIE)t=1\n$(HTTP_X_MANY_HEADERS): 1, 2, 3, 4, 5, 6=hello\n$(HTTP_X_MANY_HEADERS{2}): 1, 2, 3, 4, 5, 6=hello`,
   );
 });
 
@@ -489,7 +489,7 @@ test("TEST 9b: Multiple Variable evaluation", async () => {
   routeHandler.add(`${url}?t=1`, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `<esi:include src="${url}/fragment_1b?$(QUERY_STRING)&test=$(HTTP_X_ESI_TEST)" /> <a href="$(QUERY_STRING)" />`
+      `<esi:include src="${url}/fragment_1b?$(QUERY_STRING)&test=$(HTTP_X_ESI_TEST)" /> <a href="$(QUERY_STRING)" />`,
     );
   });
   routeHandler.add(`${url}/fragment_1b?t=1&test=foobar`, function (req, res) {
@@ -506,7 +506,7 @@ test("TEST 9b: Multiple Variable evaluation", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `FRAGMENT: ?t=1&test=foobar <a href="$(QUERY_STRING)" />`
+    `FRAGMENT: ?t=1&test=foobar <a href="$(QUERY_STRING)" />`,
   );
 });
 
@@ -515,7 +515,7 @@ test("TEST 9c: Dictionary variable syntax (cookie)", async () => {
   routeHandler.add(`${url}?t=1`, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `<esi:include src="${url}/fragment1c?$(QUERY_STRING{t})&test=$(HTTP_COOKIE{foo})" />`
+      `<esi:include src="${url}/fragment1c?$(QUERY_STRING{t})&test=$(HTTP_COOKIE{foo})" />`,
     );
   });
   routeHandler.add(`${url}/fragment1c?1&test=bar`, function (req, res) {
@@ -539,7 +539,7 @@ test("TEST 9d: List variable syntax (accept-language)", async () => {
   routeHandler.add(`${url}?t=1`, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `<esi:include src="${url}/fragment1d?$(QUERY_STRING{t})&en-gb=$(HTTP_ACCEPT_LANGUAGE{en-gb})&de=$(HTTP_ACCEPT_LANGUAGE{de})" />`
+      `<esi:include src="${url}/fragment1d?$(QUERY_STRING{t})&en-gb=$(HTTP_ACCEPT_LANGUAGE{en-gb})&de=$(HTTP_ACCEPT_LANGUAGE{de})" />`,
     );
   });
   routeHandler.add(
@@ -548,7 +548,7 @@ test("TEST 9d: List variable syntax (accept-language)", async () => {
       const url = new URL(req.url as string, testingDetails.url);
       res.writeHead(200, esiHead);
       res.end(`FRAGMENT: ${url.search}`);
-    }
+    },
   );
 
   const res = await makeRequest(`${url}?t=1`, {
@@ -566,7 +566,7 @@ test("TEST 9e: List variable syntax (accept-language) with multiple headers", as
   routeHandler.add(`${url}?t=1`, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `<esi:include src="${url}/fragment1d?$(QUERY_STRING{t})&en-gb=$(HTTP_ACCEPT_LANGUAGE{en-gb})&de=$(HTTP_ACCEPT_LANGUAGE{de})" />`
+      `<esi:include src="${url}/fragment1d?$(QUERY_STRING{t})&en-gb=$(HTTP_ACCEPT_LANGUAGE{en-gb})&de=$(HTTP_ACCEPT_LANGUAGE{de})" />`,
     );
   });
   routeHandler.add(
@@ -575,12 +575,12 @@ test("TEST 9e: List variable syntax (accept-language) with multiple headers", as
       const url = new URL(req.url as string, testingDetails.url);
       res.writeHead(200, esiHead);
       res.end(`FRAGMENT: ${url.search}`);
-    }
+    },
   );
 
   const res = await makeRequest(`${url}?t=1`, {
-    // @ts-ignore
     headers: {
+      // @ts-ignore
       "Accept-Language": ["da, en-gb", "fr"],
     },
   });
@@ -608,7 +608,7 @@ test("TEST 9f: Default variable values", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `1\nnovalue\nquoted values can have spaces\n$(QUERY_STRING{d}|unquoted values must not have spaces)\ndefault_header\ndefault_var\ndefault\n`
+    `1\nnovalue\nquoted values can have spaces\n$(QUERY_STRING{d}|unquoted values must not have spaces)\ndefault_header\ndefault_var\ndefault\n`,
   );
 });
 
@@ -631,7 +631,7 @@ test("TEST 9h: Custom variable injection", async () => {
   let url = `/esi/test-9h`;
   // set custom varibles up
   const customVaribles = async function (
-    request: Request
+    request: Request,
   ): Promise<customESIVars> {
     return {
       CUSTOM_DICTIONARY: {
@@ -669,7 +669,7 @@ test("TEST 9i: Custom variable injection in fragment", async () => {
   let url = `/esi/test-9i`;
   // set custom varibles up
   const customVaribles = async function (
-    request: Request
+    request: Request,
   ): Promise<customESIVars> {
     return {
       CUSTOM_DICTIONARY: {
@@ -711,10 +711,10 @@ test.todo("TEST 10: Prime ESI in cache");
 test.todo("TEST 10b: ESI still runs on cache HIT.");
 test.todo("TEST 10c: ESI still runs on cache revalidation, upstream 200.");
 test.todo(
-  "TEST 10d: ESI still runs on cache revalidation, upstream 200, locally valid."
+  "TEST 10d: ESI still runs on cache revalidation, upstream 200, locally valid.",
 );
 test.todo(
-  "TEST 10e: ESI still runs on cache revalidation, upstream 304, locally valid."
+  "TEST 10e: ESI still runs on cache revalidation, upstream 304, locally valid.",
 );
 test.todo("TEST 11: Prime fragment");
 test.todo("TEST 11b: Include fragment with client validators.");
@@ -741,13 +741,13 @@ test.todo("TEST 11d: Use callback feature to modify fragment request params");
 
 test.todo("TEST 12: ESI processed over buffer larger than buffer_size.");
 test.todo(
-  "TEST 12b: Incomplete ESI tag opening at the end of buffer (lookahead)"
+  "TEST 12b: Incomplete ESI tag opening at the end of buffer (lookahead)",
 );
 test.todo(
-  "TEST 12c: Incomplete ESI tag opening at the end of buffer (lookahead)"
+  "TEST 12c: Incomplete ESI tag opening at the end of buffer (lookahead)",
 );
 test.todo(
-  "TEST 12d: Incomplete ESI tag opening at the end of buffer (lookahead)"
+  "TEST 12d: Incomplete ESI tag opening at the end of buffer (lookahead)",
 );
 
 test("TEST 12e: Incomplete ESI tag opening at the end of response (regression)", async () => {
@@ -924,7 +924,7 @@ test("TEST 17: choose - when - test, conditional syntax", async () => {
     res.writeHead(200, esiHead);
     for (const [, c] of conditions.entries())
       res.say(
-        `<esi:choose><esi:when test="${c}">${c}</esi:when><esi:otherwise>Failed</esi:otherwise></esi:choose>`
+        `<esi:choose><esi:when test="${c}">${c}</esi:when><esi:otherwise>Failed</esi:otherwise></esi:choose>`,
       );
     res.end();
   });
@@ -1063,7 +1063,6 @@ test("TEST 20b: Test we advertise Surrogate-Capability (with COLO Data)", async 
     res.writeHead(200, esiHead);
     res.end(req.headers["surrogate-capability"]);
   });
-  // @ts-expect-error Not going to fill out a whole Cloudflare object here
   const res = await makeRequest(url, { cf: { colo: "DFW" } });
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
@@ -1089,7 +1088,7 @@ test("TEST 22: Test comments are removed.", async () => {
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `1234<esi:comment text="comment text" /> 5678<esi:comment text="comment text 2" />`
+      `1234<esi:comment text="comment text" /> 5678<esi:comment text="comment text 2" />`,
     );
   });
   const res = await makeRequest(url);
@@ -1103,7 +1102,7 @@ test("TEST 22b: Test comments are removed. Nested.", async () => {
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      'BEFORE <esi:choose><esi:when test="1>2"></esi:when><esi:otherwise><esi:comment test="hello test text" /> <esi:comment test="hello test text" /> <esi:comment test="hello test text" /> </esi:otherwise></esi:choose> AFTER'
+      'BEFORE <esi:choose><esi:when test="1>2"></esi:when><esi:otherwise><esi:comment test="hello test text" /> <esi:comment test="hello test text" /> <esi:comment test="hello test text" /> </esi:otherwise></esi:choose> AFTER',
     );
   });
   const res = await makeRequest(url);
@@ -1125,7 +1124,7 @@ test("TEST 23: Surrogate-Control removed when ESI enabled but no work needed (sl
 });
 
 test.todo(
-  "TEST 23b: Surrogate-Control removed when ESI enabled but no work needed (fast path)"
+  "TEST 23b: Surrogate-Control removed when ESI enabled but no work needed (fast path)",
 );
 
 // TODO add error log here
@@ -1138,7 +1137,7 @@ test("TEST 24: Fragment recursion limit", async () => {
       res.say(`p: ${req.headers["x-esi-recursion-level"] || 0}`);
       res.end(`<esi:include src="${url}/fragment_24" />`);
     },
-    { count: 5 }
+    { count: 5 },
   );
   routeHandler.add(
     `${url}/fragment_24`,
@@ -1147,13 +1146,13 @@ test("TEST 24: Fragment recursion limit", async () => {
       res.say(`c: ${req.headers["x-esi-recursion-level"] || 0}`);
       res.end(`<esi:include src="${url}" />`);
     },
-    { count: 5 }
+    { count: 5 },
   );
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `p: 0\nc: 1\np: 2\nc: 3\np: 4\nc: 5\np: 6\nc: 7\np: 8\nc: 9\n`
+    `p: 0\nc: 1\np: 2\nc: 3\np: 4\nc: 5\np: 6\nc: 7\np: 8\nc: 9\n`,
   );
 });
 
@@ -1169,7 +1168,7 @@ test("TEST 24b: Lower fragment recursion limit", async () => {
       res.say(`p: ${req.headers["x-esi-recursion-level"] || 0}`);
       res.end(`<esi:include src="${url}/fragment_24b" />`);
     },
-    { count: 3 }
+    { count: 3 },
   );
   routeHandler.add(
     `${url}/fragment_24b`,
@@ -1178,7 +1177,7 @@ test("TEST 24b: Lower fragment recursion limit", async () => {
       res.say(`c: ${req.headers["x-esi-recursion-level"] || 0}`);
       res.end(`<esi:include src="${url}" />`);
     },
-    { count: 2 }
+    { count: 2 },
   );
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
@@ -1191,7 +1190,7 @@ test("TEST 25: Multiple esi includes on a single line", async () => {
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `<esi:include src="${url}/fragment_25a" /> <esi:include src="${url}/fragment_25b" />`
+      `<esi:include src="${url}/fragment_25a" /> <esi:include src="${url}/fragment_25b" />`,
     );
   });
   routeHandler.add(`${url}/fragment_25a`, function (req, res) {
@@ -1223,7 +1222,7 @@ test("TEST 26: Include tag whitespace", async () => {
       res.writeHead(200, esiHead);
       res.end(`FRAGMENT`);
     },
-    { count: 2 }
+    { count: 2 },
   );
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
@@ -1272,12 +1271,12 @@ test("TEST 29: Remaining parent response chunks returned on fragment error", asy
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n1\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n2`
+    `AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n1\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n2`,
   );
 });
 
 test.todo(
-  "TEST 30: Prime with ESI args - which should not enter cache key or reach the origin"
+  "TEST 30: Prime with ESI args - which should not enter cache key or reach the origin",
 );
 test.todo("TEST 30b: ESI args vary, but cache is a HIT");
 test.todo("TEST 30c: As 30 but with request not accepting cache");
@@ -1414,7 +1413,7 @@ test("TEST 32: Tag parsing boundaries", async () => {
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `BEFORE CONTENT\n<esi:choose\n><esi:when           \n                    test="$(QUERY_STRING{a}) == 'a'"\n            >a\n<esi:include \n                src="${url}/fragment_1"         \n/></esi:when\n>\n</esi:choose\n>\nAFTER CONTENT\n`
+      `BEFORE CONTENT\n<esi:choose\n><esi:when           \n                    test="$(QUERY_STRING{a}) == 'a'"\n            >a\n<esi:include \n                src="${url}/fragment_1"         \n/></esi:when\n>\n</esi:choose\n>\nAFTER CONTENT\n`,
     );
   });
   routeHandler.add(`${url}/fragment_1`, function (req, res) {
@@ -1503,17 +1502,17 @@ test("TEST 37: SSRF", async () => {
     function (req, res) {
       res.writeHead(200, esiHead);
       res.end(`<esi:include src="${url}/fragment_1?$(QUERY_STRING{evil})" />`);
-    }
+    },
   );
   routeHandler.add(
     `${url}/fragment_1?foo%22/&gt;&lt;esi:include%20src=%22/bad_frag%22%20/&gt;`,
     function (req, res) {
       res.writeHead(200, esiHead);
       res.end(`FRAGMENT`);
-    }
+    },
   );
   const res = await makeRequest(
-    `${url}?evil=foo"/><esi:include src="/bad_frag" />`
+    `${url}?evil=foo"/><esi:include src="/bad_frag" />`,
   );
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
@@ -1527,7 +1526,7 @@ test("TEST 38: SSRF via <esi:vars>", async () => {
     function (req, res) {
       res.writeHead(200, esiHead);
       res.end(`<esi:vars>$(QUERY_STRING{evil})</esi:vars>`);
-    }
+    },
   );
   const res = await makeRequest(`${url}?evil=<esi:include src="/bad_frag" />`);
   expect(res.ok).toBeTruthy();
@@ -1543,15 +1542,15 @@ test("TEST 39: XSS via <esi:vars>", async () => {
       res.writeHead(200, esiHead);
       res.say(`<esi:vars>$(QUERY_STRING{evil})</esi:vars>`);
       res.end(`<esi:vars>$(RAW_QUERY_STRING{evil})</esi:vars>`);
-    }
+    },
   );
   const res = await makeRequest(
-    `${url}?evil=<script>alert("HAXXED");</script>`
+    `${url}?evil=<script>alert("HAXXED");</script>`,
   );
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `&lt;script&gt;alert("HAXXED");&lt;/script&gt;\n<script>alert("HAXXED");</script>`
+    `&lt;script&gt;alert("HAXXED");&lt;/script&gt;\n<script>alert("HAXXED");</script>`,
   );
 });
 
@@ -1571,15 +1570,15 @@ Will never happen
     function (req, res) {
       res.writeHead(200, esiHead);
       res.end(content);
-    }
+    },
   );
   const res = await makeRequest(
-    `${url}?a=1&tag=foo<script>alert("bad!")</script>bar`
+    `${url}?a=1&tag=foo<script>alert("bad!")</script>bar`,
   );
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `1\nfoo<script>alert("bad!")</script>bar\nfoo&lt;script&gt;alert("bad!")&lt;/script&gt;bar\n`
+    `1\nfoo<script>alert("bad!")</script>bar\nfoo&lt;script&gt;alert("bad!")&lt;/script&gt;bar\n`,
   );
 });
 
@@ -1596,22 +1595,22 @@ AFTER`;
     function (req, res) {
       res.writeHead(200, esiHead);
       res.end(content);
-    }
+    },
   );
   routeHandler.add(
     `${url}/fragment_1?test=%22&lt;esi:include%20src=%22/bad_frag%22%20/&gt;`,
     function (req, res) {
       res.writeHead(200, esiHead);
       res.end("FRAGMENT");
-    }
+    },
   );
   const res = await makeRequest(
-    `${url}?a=test&evil="<esi:include src="/bad_frag" />`
+    `${url}?a=test&evil="<esi:include src="/bad_frag" />`,
   );
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `BEFORE $(QUERY_STRING{a})\n\nFRAGMENT\ntest\n\nAFTER`
+    `BEFORE $(QUERY_STRING{a})\n\nFRAGMENT\ntest\n\nAFTER`,
   );
 });
 
@@ -1620,14 +1619,14 @@ test("TEST 42: By default includes to 3rd party domains are allowed", async () =
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `<esi:include src="https://jsonplaceholder.typicode.com/todos/1" />`
+      `<esi:include src="https://jsonplaceholder.typicode.com/todos/1" />`,
     );
   });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `{\n  "userId": 1,\n  "id": 1,\n  "title": "delectus aut autem",\n  "completed": false\n}`
+    `{\n  "userId": 1,\n  "id": 1,\n  "title": "delectus aut autem",\n  "completed": false\n}`,
   );
 });
 
@@ -1638,7 +1637,7 @@ test("TEST 43: Disable third party includes", async () => {
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `<esi:include src="https://jsonplaceholder.typicode.com/todos/1" />`
+      `<esi:include src="https://jsonplaceholder.typicode.com/todos/1" />`,
     );
   });
   const res = await makeRequest(url);
@@ -1655,14 +1654,14 @@ test("TEST 44: White list third party includes", async () => {
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.end(
-      `<esi:include src="https://jsonplaceholder.typicode.com/todos/1" />`
+      `<esi:include src="https://jsonplaceholder.typicode.com/todos/1" />`,
     );
   });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `{\n  "userId": 1,\n  "id": 1,\n  "title": "delectus aut autem",\n  "completed": false\n}`
+    `{\n  "userId": 1,\n  "id": 1,\n  "title": "delectus aut autem",\n  "completed": false\n}`,
   );
 });
 
@@ -1703,7 +1702,7 @@ x-esi-recursion-level: 1
 surrogate-capability: cloudflareWorkerESI="ESI/1.0"
 mf-loop: 1
 accept-encoding: gzip, deflate
-`
+`,
   );
 });
 
@@ -1711,7 +1710,7 @@ test("TEST 45b: Cookies and Authorization don't propagate to fragment on differe
   const url = `/esi/test-45b`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
-    res.end(`<esi:include src="https://mockbin.org/request" />`);
+    res.end(`<esi:include src="https://httpbin.org/get" />`);
   });
   const res = await makeRequest(url, {
     method: "POST",
@@ -1726,10 +1725,9 @@ test("TEST 45b: Cookies and Authorization don't propagate to fragment on differe
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   const text = await res.text();
-  expect(text).toMatch(/(.*)"method": "GET",/);
-  expect(text).toMatch(/(.*)"cache-control": "no-cache",/);
-  expect(text).not.toMatch(/(.*)"authorization": "bar",/);
-  expect(text).not.toMatch(/(.*)"cookie": "foo",/);
+  expect(text).toMatch(/(.*)"Cache-Control": "no-cache",/);
+  expect(text).not.toMatch(/(.*)"Authorization": "bar",/);
+  expect(text).not.toMatch(/(.*)"Cookie": "foo",/);
 });
 
 test("TEST 46: Cookie var blacklist", async () => {
@@ -1742,11 +1740,11 @@ test("TEST 46: Cookie var blacklist", async () => {
     res.say(`<esi:vars>$(HTTP_COOKIE)</esi:vars>`);
     // And by key
     res.say(
-      `<esi:vars>$(HTTP_COOKIE{allowed}):$(HTTP_COOKIE{not_allowed})</esi:vars>`
+      `<esi:vars>$(HTTP_COOKIE{allowed}):$(HTTP_COOKIE{not_allowed})</esi:vars>`,
     );
     // ... and also in URIs
     res.end(
-      `<esi:include src="${url}/fragment_1?&allowed=$(HTTP_COOKIE{allowed})&not_allowed=$(HTTP_COOKIE{not_allowed})" />`
+      `<esi:include src="${url}/fragment_1?&allowed=$(HTTP_COOKIE{allowed})&not_allowed=$(HTTP_COOKIE{not_allowed})" />`,
     );
   });
   routeHandler.add(
@@ -1756,7 +1754,7 @@ test("TEST 46: Cookie var blacklist", async () => {
       const url = new URL(req.url as string, testingDetails.url);
       res.say(`FRAGMENT:${url.search}`);
       res.end(`${req.headers["cookie"]}`);
-    }
+    },
   );
 
   const res = await makeRequest(url, {
@@ -1767,7 +1765,7 @@ test("TEST 46: Cookie var blacklist", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `allowed=yes; also_allowed=yes\nyes:\nFRAGMENT:?&allowed=yes&not_allowed=\nallowed=yes; also_allowed=yes; not_allowed=no`
+    `allowed=yes; also_allowed=yes\nyes:\nFRAGMENT:?&allowed=yes&not_allowed=\nallowed=yes; also_allowed=yes; not_allowed=no`,
   );
 });
 
@@ -1781,11 +1779,11 @@ test("TEST 46b: Cookie var blacklist on fragment", async () => {
     res.say(`<esi:vars>$(HTTP_COOKIE)</esi:vars>`);
     // And by key
     res.say(
-      `<esi:vars>$(HTTP_COOKIE{allowed}):$(HTTP_COOKIE{not_allowed})</esi:vars>`
+      `<esi:vars>$(HTTP_COOKIE{allowed}):$(HTTP_COOKIE{not_allowed})</esi:vars>`,
     );
     // ... and also in URIs
     res.end(
-      `<esi:include src="${url}/fragment_2?&allowed=$(HTTP_COOKIE{allowed})&not_allowed=$(HTTP_COOKIE{not_allowed})" />`
+      `<esi:include src="${url}/fragment_2?&allowed=$(HTTP_COOKIE{allowed})&not_allowed=$(HTTP_COOKIE{not_allowed})" />`,
     );
   });
   routeHandler.add(url, function (req, res) {
@@ -1799,7 +1797,7 @@ test("TEST 46b: Cookie var blacklist on fragment", async () => {
       const url = new URL(req.url as string, testingDetails.url);
       res.say(`FRAGMENT:${url.search}`);
       res.end(`${req.headers["cookie"]}`);
-    }
+    },
   );
 
   const res = await makeRequest(url, {
@@ -1810,7 +1808,7 @@ test("TEST 46b: Cookie var blacklist on fragment", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `allowed=yes; also_allowed=yes\nyes:\nFRAGMENT:?&allowed=yes&not_allowed=\nallowed=yes; also_allowed=yes; not_allowed=no`
+    `allowed=yes; also_allowed=yes\nyes:\nFRAGMENT:?&allowed=yes&not_allowed=\nallowed=yes; also_allowed=yes; not_allowed=no`,
   );
 });
 
@@ -1826,7 +1824,7 @@ test("TEST 47: Query string", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    "esi_name=James&esi_foo=Bar:name:James:foo=Bar"
+    "esi_name=James&esi_foo=Bar:name:James:foo=Bar",
   );
 });
 
@@ -1867,7 +1865,7 @@ test("TEST 48: Mutliple ESI Includes next to each other", async () => {
       res.writeHead(200, esiHead);
       res.end(`FRAGMENT`);
     },
-    { count: 2 }
+    { count: 2 },
   );
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
@@ -1876,7 +1874,7 @@ test("TEST 48: Mutliple ESI Includes next to each other", async () => {
 });
 
 test("TEST 49: Mutliple ESI Includes next to each other in choose", async () => {
-  const url = `/esi/test-48`;
+  const url = `/esi/test-49`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
     res.say("START:");
@@ -1892,7 +1890,7 @@ test("TEST 49: Mutliple ESI Includes next to each other in choose", async () => 
       res.writeHead(200, esiHead);
       res.end(`FRAGMENT`);
     },
-    { count: 2 }
+    { count: 2 },
   );
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
@@ -1901,8 +1899,8 @@ test("TEST 49: Mutliple ESI Includes next to each other in choose", async () => 
 });
 
 test("TEST 50: Multiple ESI Args make it all the way through", async () => {
-  const url = `/esi/test-48?esi_args1=1&esi_args2=2&esi_args3=3&esi_args4=4`;
-  routeHandler.add("/esi/test-48", function (req, res) {
+  const url = `/esi/test-50?esi_args1=1&esi_args2=2&esi_args3=3&esi_args4=4`;
+  routeHandler.add("/esi/test-50", function (req, res) {
     res.writeHead(200, esiHead);
     res.end("<esi:vars>$(ESI_ARGS)</esi:vars>");
   });
@@ -1910,6 +1908,6 @@ test("TEST 50: Multiple ESI Args make it all the way through", async () => {
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(
-    `esi_args1=1&esi_args2=2&esi_args3=3&esi_args4=4`
+    `esi_args1=1&esi_args2=2&esi_args3=3&esi_args4=4`,
   );
 });

@@ -20,7 +20,7 @@ export async function process(
   chunk: string,
   evalVars: boolean,
   fetcher: fetchFunction,
-  customESIFunction?: customESIVarsFunction
+  customESIFunction?: customESIVarsFunction,
 ): Promise<string> {
   if (chunk.indexOf("<esi:include") == -1) {
     if (evalVars) {
@@ -49,7 +49,7 @@ export async function process(
         eventData,
         includeMatch[1], // pass the src tag straight through
         fetcher,
-        customESIFunction
+        customESIFunction,
       );
 
       // Already escaped by the fetcher
@@ -81,7 +81,7 @@ async function fetchInclude(
   eventData: ESIEventData,
   include: string,
   fetcher: fetchFunction,
-  customESIFunction?: customESIVarsFunction
+  customESIFunction?: customESIVarsFunction,
 ): Promise<string> {
   // replace any vars in the src string
   const src = replace_vars(eventData, include);
@@ -101,13 +101,13 @@ async function fetchInclude(
     if (eventData.request.headers.get("Authorization")) {
       req.headers.set(
         "Authorization",
-        eventData.request.headers.get("Authorization") as string
+        eventData.request.headers.get("Authorization") as string,
       );
     }
     if (eventData.request.headers.get("Cookie")) {
       req.headers.set(
         "Cookie",
-        eventData.request.headers.get("Cookie") as string
+        eventData.request.headers.get("Cookie") as string,
       );
     }
   }
@@ -115,13 +115,13 @@ async function fetchInclude(
   // Add our recursion level and parent uri
   req.headers.set(
     "X-ESI-Recursion-Level",
-    (eventData.recursion + 1).toString()
+    (eventData.recursion + 1).toString(),
   );
   req.headers.set("X-ESI-Parent-URI", eventData.request.url);
   if (eventData.request.headers.get("Cache-Control")) {
     req.headers.set(
       "Cache-Control",
-      eventData.request.headers.get("Cache-Control") as string
+      eventData.request.headers.get("Cache-Control") as string,
     );
   }
 

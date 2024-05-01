@@ -15,7 +15,7 @@ import { getheaderToken } from "./headerUtils";
  * @returns {Promise<Request>} Request with SurrogateControl header added
  */
 export async function advertiseSurrogateControl(
-  request: Request
+  request: Request,
 ): Promise<Request> {
   let coloName = "";
   if (request.cf && request.cf.colo) {
@@ -23,7 +23,7 @@ export async function advertiseSurrogateControl(
   }
   request.headers.append(
     "Surrogate-Capability",
-    `cloudflareWorkerESI${coloName}="${getProcessorToken()}/${getProcessorVersionString()}"`
+    `cloudflareWorkerESI${coloName}="${getProcessorToken()}/${getProcessorVersionString()}"`,
   );
   return request;
 }
@@ -37,7 +37,7 @@ export async function advertiseSurrogateControl(
  */
 export async function canDelegateToSurrogate(
   request: Request,
-  config: ESIConfig
+  config: ESIConfig,
 ): Promise<boolean> {
   const surrogates = config.allowSurrogateDelegation;
   if (surrogates === undefined || surrogates === false) return false;
@@ -46,7 +46,7 @@ export async function canDelegateToSurrogate(
   if (surrogateCapability) {
     const capabilityToken = getheaderToken(
       surrogateCapability,
-      "[!#\\$%&'\\*\\+\\-.\\^_`\\|~0-9a-zA-Z]+"
+      "[!#\\$%&'\\*\\+\\-.\\^_`\\|~0-9a-zA-Z]+",
     );
     const [capabilityProcessor, capabilityVersion] =
       splitESIToken(capabilityToken);
@@ -79,7 +79,7 @@ export async function canDelegateToSurrogate(
  * @returns {[string | null, number | null]} A valid token split or null
  */
 export function splitESIToken(
-  token: string | null
+  token: string | null,
 ): [string | null, number | null] {
   if (!token) return [null, null];
   const matches = token.match(/^([A-Za-z0-9-_]+)\/(\d+\.?\d+)$/);

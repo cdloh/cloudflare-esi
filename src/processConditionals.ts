@@ -16,7 +16,7 @@ const esi_when_pattern = /(?:<esi:when)\s+(?:test="(.+?)"\s*>)/;
 export async function process(
   esiData: ESIEventData,
   chunk: string,
-  res: Array<string> = []
+  res: Array<string> = [],
 ): Promise<[string, boolean]> {
   const parser = new tagParser(chunk);
   let after;
@@ -52,7 +52,7 @@ export async function process(
               const condition = match[1];
               const conditionValidated = await _esi_evaluate_condition(
                 esiData,
-                condition
+                condition,
               );
 
               if (tag && tag.contents && conditionValidated) {
@@ -122,7 +122,7 @@ const reg_esi_condition =
  */
 function esi_eval_var_in_when_tag(
   eventData: ESIEventData,
-  match: [String: string, ...args: string[]]
+  match: [String: string, ...args: string[]],
 ): string {
   const varInTag = esi_eval_var(eventData, match);
 
@@ -175,7 +175,7 @@ function _esi_condition_lexer(condition: string): boolean {
 function esiConditionTester(
   left: string,
   right: string,
-  operator: string
+  operator: string,
 ): boolean {
   switch (operator) {
     case "==":
@@ -316,7 +316,7 @@ function esi_bracket_splitter(condition: string): boolean {
         fullExpression.push(condition.substring(parsedPoint, startingIndex));
         const conditionBracketed = condition.substring(
           startingIndex + 1,
-          endIndex
+          endIndex,
         );
 
         // Loop it back to see if there is another bracket inside
@@ -348,7 +348,7 @@ function esi_bracket_splitter(condition: string): boolean {
  */
 function _esi_evaluate_condition(
   esiData: ESIEventData,
-  condition: string
+  condition: string,
 ): boolean {
   // Check for variables
   condition = replace_vars(esiData, condition, esi_eval_var_in_when_tag);

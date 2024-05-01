@@ -49,7 +49,7 @@ test("TEST 2: Custom Fetcher with ESI", async () => {
 -->MIDDLE
 <esi:vars>$(QUERY_STRING{c})</esi:vars>
 -->AFTER`,
-      { headers: esiHead }
+      { headers: esiHead },
     );
   };
   parser = new esi(config, undefined, customFetch);
@@ -67,7 +67,7 @@ test("TEST 3: Custom Fetcher with ESI with includes", async () => {
     if (responseNo == 1)
       return new Response(
         `BEFORE <esi:include src="${url}/fragment_1" /> AFTER`,
-        { headers: esiHead }
+        { headers: esiHead },
       );
     return new Response("OK");
   };

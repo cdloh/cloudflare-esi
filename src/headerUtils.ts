@@ -8,14 +8,14 @@
  */
 export function getheaderToken(
   header: string,
-  directive: string
+  directive: string,
 ): string | null {
   if (headerHasDirective(header, directive)) {
     const matches = header.match(
       new RegExp(
         `${directive}="?([a-z0-9_~!#%&/',\`\\$\\*\\+\\-\\|\\^\\.]+)"?`,
-        "i"
-      )
+        "i",
+      ),
     );
     if (matches) {
       return matches[1];

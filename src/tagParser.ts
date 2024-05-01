@@ -24,7 +24,7 @@ export class tagParser {
   }
 
   async next(
-    tagname?: string
+    tagname?: string,
   ): Promise<[tag | null, string | undefined, string | undefined]> {
     const tag = this.findWholeTag(tagname);
     let before, after;
@@ -49,7 +49,7 @@ export class tagParser {
     }
 
     return new RegExp(
-      `<(${tag})(?:\\s*(?:[a-z]+=\\".+?(?<!\\\\)\\"))?[^>]*?(?:\\s*)(/>|>)?`
+      `<(${tag})(?:\\s*(?:[a-z]+=\\".+?(?<!\\\\)\\"))?[^>]*?(?:\\s*)(/>|>)?`,
     );
   }
 
@@ -58,7 +58,7 @@ export class tagParser {
       return /(?:<(!--esi)|(-->))/;
     }
     return new RegExp(
-      `<[\\/]?(${tag})(?:\\s*(?:[a-z]+=\\".+?(?<!\\\\)\\"))?[^>]*?(?:\\s*)(\\s*/>|>)?`
+      `<[\\/]?(${tag})(?:\\s*(?:[a-z]+=\\".+?(?<!\\\\)\\"))?[^>]*?(?:\\s*)(\\s*/>|>)?`,
     );
   }
 
