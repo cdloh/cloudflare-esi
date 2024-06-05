@@ -1911,3 +1911,33 @@ test("TEST 50: Multiple ESI Args make it all the way through", async () => {
     `esi_args1=1&esi_args2=2&esi_args3=3&esi_args4=4`,
   );
 });
+
+describe("TEST 51: ESI Args that lead with ints shouldn't convert to ints", () => {
+  const checks = [
+    { arg: "1719,2405", result: "first-lineage" },
+    { arg: "1719,1732", result: "second-lineage" },
+    { arg: "1719,1918", result: "third-lineage" },
+    { arg: "1719,1922", result: "forth-lineage" },
+    { arg: "1719,1926", result: "fith-lineage" },
+  ];
+
+  const url = `/esi/test-51`;
+  checks.forEach(function (check) {
+    it(check.result, async () => {
+      routeHandler.add(url, function (req, res) {
+        res.writeHead(200, esiHead);
+        res.end(`<esi:choose>
+    <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(2405)(?:,|$)/'">first-lineage</esi:when>
+    <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1732)(?:,|$)/'">second-lineage</esi:when>
+    <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1918)(?:,|$)/'">third-lineage</esi:when>
+    <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1922)(?:,|$)/'">forth-lineage</esi:when>
+    <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1926)(?:,|$)/'">fith-lineage</esi:when>
+</esi:choose>`);
+      });
+      const res = await makeRequest(`${url}?esi_lineage=${check.arg}`);
+      expect(res.ok).toBeTruthy();
+      expect(await res.text()).toEqual(check.result);
+      expect(checkSurrogate(res)).toBeTruthy();
+    });
+  });
+});
