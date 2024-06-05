@@ -100,9 +100,10 @@ export type customESIVars = {
   [key: string]: string | { [key: string]: string };
 };
 export type customESIVarsFunction = (
-  request: Request
+  request: Request,
 ) => Promise<customESIVars>;
 export type fetchFunction = (request: string | Request) => Promise<Response>;
+export type onCompleteFunction = () => Promise<void>;
 
 const processorToken = "ESI";
 const processorVersion = 1.0;
@@ -111,11 +112,13 @@ export class esi {
   options: ESIConfig;
   esiFunction?: customESIVarsFunction;
   fetcher: fetchFunction;
+  onCompleteFunction: onCompleteFunction | undefined;
 
   constructor(
     options?: ESIConfig,
     customESIFunction?: customESIVarsFunction,
-    fetcher = fetch
+    fetcher = fetch as fetchFunction,
+    onCompleteFunction?: onCompleteFunction,
   ) {
     const defaultConfig = {
       recursionLimit: 10,
@@ -123,6 +126,7 @@ export class esi {
     };
     this.options = { ...defaultConfig, ...options };
     this.fetcher = fetcher;
+    this.onCompleteFunction = onCompleteFunction;
     if (customESIFunction) this.esiFunction = customESIFunction;
   }
 
@@ -180,6 +184,10 @@ export class esi {
       const resp = new Response(response.body, response);
       // We set the URL manually here as it doesn't come across from the copy˛
       Object.defineProperty(resp, "url", { value: response.url });
+      // call the complete function
+      if (this.onCompleteFunction) {
+        await this.onCompleteFunction()
+      }
       return resp;
     }
 
@@ -225,7 +233,7 @@ export class esi {
       text,
       vars,
       this.fetcher,
-      this.esiFunction
+      this.esiFunction,
     );
 
     return text;
@@ -237,7 +245,7 @@ export class esi {
   async streamBody(
     eventData: ESIEventData,
     readable: ReadableStream,
-    writable: WritableStream
+    writable: WritableStream,
   ): Promise<void> {
     const reader = readable.getReader();
     const encoder = new TextEncoder();
@@ -248,6 +256,7 @@ export class esi {
     const output: Array<Promise<string>> = [];
     let pending: boolean;
     let ended: boolean;
+    const onCompleteFunction = this.onCompleteFunction;
 
     /**
      * Flushes output to the Writeable Stream
@@ -287,6 +296,9 @@ export class esi {
       if (ended && output.length === 0) {
         const writer = writable.getWriter();
         await writer.close();
+        if (onCompleteFunction) {
+          await onCompleteFunction();
+        }
       }
     }
 
