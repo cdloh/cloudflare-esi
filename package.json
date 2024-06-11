@@ -9,8 +9,8 @@
   "scripts": {
     "build": "tsc",
     "build-worker": "node worker/build.js",
-    "test": "npm run-script build-worker && node --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --collectCoverage --coverageProvider=v8",
-    "test-debug": "npm run-script build-worker && node --experimental-vm-modules --inspect-brk node_modules/jest/bin/jest.js --runInBand",
+    "test": "npm run-script build-worker && node --no-experimental-fetch --experimental-vm-modules node_modules/jest/bin/jest.js --verbose --collectCoverage --coverageProvider=v8",
+    "test-debug": "npm run-script build-worker && node --no-experimental-fetch --experimental-vm-modules --inspect-brk node_modules/jest/bin/jest.js --runInBand",
     "format": "prettier --write  '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "lint": "eslint --max-warnings=0 src && prettier --check '*.{json,js}' 'src/**/*.{js,ts}' 'test/**/*.{js,ts}'",
     "prepack": "npm run-script test && npm run-script lint && npm run-script build",
@@ -110,5 +110,8 @@
   },
   "dependencies": {
     "worktop": "0.7.3"
+  },
+  "overrides": {
+    "@types/node": "20.8.3"
   }
 }

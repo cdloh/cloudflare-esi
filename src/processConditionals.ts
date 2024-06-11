@@ -125,14 +125,23 @@ function esi_eval_var_in_when_tag(
   match: [String: string, ...args: string[]],
 ): string {
   const varInTag = esi_eval_var(eventData, match);
-
-  const number = parseInt(varInTag, 10);
-  if (number) {
-    return number.toString();
+  // we have to check varInTag is *actually* a number and doesn't just have leading numbers in it
+  if (strIsNumber(varInTag)) {
+    return parseInt(varInTag, 10).toString();
   } else {
     // Change to replaceAll once upgraded node
     return "'" + varInTag.replace(/'/g, "\\'") + "'";
   }
+}
+
+/**
+ * Evaluates str and returns if it *actually* is a number not just a str with leading numbers
+ *
+ * @param {string} str string to check
+ * @returns {boolean} check result
+ */
+function strIsNumber(str: string): boolean {
+  return !isNaN(Number(str));
 }
 
 /**
