@@ -1,3 +1,12 @@
+## [0.2.3](https://github.com/cdloh/cloudflare-esi/compare/v0.2.2...v0.2.3) (2024-06-11)
+
+
+### Bug Fixes
+
+* handles esi Args that are strings but have leading integers ([1aa0067](https://github.com/cdloh/cloudflare-esi/commit/1aa006710636e72ae6a9f52fc1f5dba7fbfee29d))
+* update actions and nodejs versions to fix for latest LTS ([9bd3ab4](https://github.com/cdloh/cloudflare-esi/commit/9bd3ab4b47b973663b42f5363da087d328fea79b))
+* Upgrade packages prep for a few patches ([060c874](https://github.com/cdloh/cloudflare-esi/commit/060c8744942a0ece2635d5d51cc22c497952918a))
+
 ## [0.2.2](https://github.com/cdloh/cloudflare-esi/compare/v0.2.1...v0.2.2) (2022-10-12)
 
 
