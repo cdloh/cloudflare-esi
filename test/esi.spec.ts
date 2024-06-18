@@ -1919,6 +1919,7 @@ describe("TEST 51: ESI Args that lead with ints shouldn't convert to ints", () =
     { arg: "1719,1918", result: "third-lineage" },
     { arg: "1719,1922", result: "forth-lineage" },
     { arg: "1719,1926", result: "fith-lineage" },
+    { arg: "1719,2000", result: "sixth-lineage" },
   ];
 
   const url = `/esi/test-51`;
@@ -1932,6 +1933,7 @@ describe("TEST 51: ESI Args that lead with ints shouldn't convert to ints", () =
     <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1918)(?:,|$)/'">third-lineage</esi:when>
     <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1922)(?:,|$)/'">forth-lineage</esi:when>
     <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1926)(?:,|$)/'">fith-lineage</esi:when>
+    <esi:when test="$(ESI_ARGS{lineage}) == '1719,2000'">sixth-lineage</esi:when>
 </esi:choose>`);
       });
       const res = await makeRequest(`${url}?esi_lineage=${check.arg}`);
@@ -1940,4 +1942,24 @@ describe("TEST 51: ESI Args that lead with ints shouldn't convert to ints", () =
       expect(checkSurrogate(res)).toBeTruthy();
     });
   });
+});
+
+test("TEST 52: Empty variables can be compared", async () => {
+  const url = `/esi/test-52?x=`;
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(`<esi:choose>
+    <esi:when test="$(QUERY_STRING{x}) == ''">x empty;</esi:when>
+    <esi:when test="$(QUERY_STRING{x}) != ''">x not empty;</esi:when>
+    <esi:otherwise>x neither empty nor not empty;</esi:otherwise>
+</esi:choose><esi:choose>
+    <esi:when test="$(QUERY_STRING{y}) == ''">y empty;</esi:when>
+    <esi:when test="$(QUERY_STRING{y}) != ''">y not empty;</esi:when>
+    <esi:otherwise>y neither empty nor not empty;</esi:otherwise>
+</esi:choose>`);
+  });
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`x empty;y empty;`);
 });

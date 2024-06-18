@@ -50,7 +50,7 @@ export async function process(
             // eslint-disable-next-line no-inner-declarations, jsdoc/require-jsdoc
             async function processWhen(match: RegExpMatchArray) {
               const condition = match[1];
-              const conditionValidated = await _esi_evaluate_condition(
+              const conditionValidated = _esi_evaluate_condition(
                 esiData,
                 condition,
               );
@@ -127,7 +127,7 @@ function esi_eval_var_in_when_tag(
   const varInTag = esi_eval_var(eventData, match);
   // we have to check varInTag is *actually* a number and doesn't just have leading numbers in it
   if (strIsNumber(varInTag)) {
-    return parseInt(varInTag, 10).toString();
+    return varInTag;
   } else {
     // Change to replaceAll once upgraded node
     return "'" + varInTag.replace(/'/g, "\\'") + "'";
@@ -141,7 +141,14 @@ function esi_eval_var_in_when_tag(
  * @returns {boolean} check result
  */
 function strIsNumber(str: string): boolean {
-  return !isNaN(Number(str));
+  const int = parseInt(str, 10);
+  // definitely not an int
+  if (!int) {
+    return false;
+  }
+
+  // double check we have correctly converted it to an int and not been tricked by parseInt
+  return int.toString() === str;
 }
 
 /**
