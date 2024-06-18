@@ -1,3 +1,10 @@
+## [0.2.4](https://github.com/cdloh/cloudflare-esi/compare/v0.2.3...v0.2.4) (2024-06-18)
+
+
+### Bug Fixes
+
+* handle empty strings correctly (dont force them to be ints) ([eb61116](https://github.com/cdloh/cloudflare-esi/commit/eb61116a9a0f24c8fe778c9c83df70136d0ffce1))
+
 ## [0.2.3](https://github.com/cdloh/cloudflare-esi/compare/v0.2.2...v0.2.3) (2024-06-11)
 
 
