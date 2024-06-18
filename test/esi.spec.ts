@@ -880,6 +880,12 @@ test("TEST 17: choose - when - test, conditional syntax", async () => {
     "(1 > 2) | (3.02 > 2.4124 & 1 <= 1)",
     "(1>2)||(3>2&&2>1)",
     "! (1 < 2) | (3 > 2 & 2 >= 1)",
+    "60 > 100",
+    "60 < 100",
+    "60 >= 100",
+    "60 <= 100",
+    "100 >= 100",
+    "100 <= 100",
     "'hello' == 'hello'",
     "'hello' != 'goodbye'",
     "'repeat' != 'function'", // use of lua words in strings
@@ -943,6 +949,12 @@ test("TEST 17: choose - when - test, conditional syntax", async () => {
 (1 > 2) | (3.02 > 2.4124 & 1 <= 1)
 (1>2)||(3>2&&2>1)
 ! (1 < 2) | (3 > 2 & 2 >= 1)
+Failed
+60 < 100
+Failed
+60 <= 100
+100 >= 100
+100 <= 100
 'hello' == 'hello'
 'hello' != 'goodbye'
 'repeat' != 'function'
@@ -1920,6 +1932,8 @@ describe("TEST 51: ESI Args that lead with ints shouldn't convert to ints", () =
     { arg: "1719,1922", result: "forth-lineage" },
     { arg: "1719,1926", result: "fith-lineage" },
     { arg: "1719,2000", result: "sixth-lineage" },
+    { arg: "2000", result: "seventh-lineage" },
+    { arg: "2001", result: "eighth-lineage" },
   ];
 
   const url = `/esi/test-51`;
@@ -1934,6 +1948,8 @@ describe("TEST 51: ESI Args that lead with ints shouldn't convert to ints", () =
     <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1922)(?:,|$)/'">forth-lineage</esi:when>
     <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1926)(?:,|$)/'">fith-lineage</esi:when>
     <esi:when test="$(ESI_ARGS{lineage}) == '1719,2000'">sixth-lineage</esi:when>
+    <esi:when test="$(ESI_ARGS{lineage}) == '2000'">seventh-lineage</esi:when>
+    <esi:when test="$(ESI_ARGS{lineage}) >= '800'">eighth-lineage</esi:when>
 </esi:choose>`);
       });
       const res = await makeRequest(`${url}?esi_lineage=${check.arg}`);
