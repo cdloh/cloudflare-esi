@@ -152,6 +152,21 @@ function strIsNumber(str: string): boolean {
 }
 
 /**
+ * Converts a string to a number if it is
+ * passes that to the tester and returns the result
+ *
+ * @param {string} str conditional string to split
+ * @returns {string | number} condition result
+ */
+function strToNumOrStr(str: string): string | number {
+  // we have to check varInTag is *actually* a number and doesn't just have leading numbers in it
+  if (strIsNumber(str)) {
+    return parseInt(str, 10);
+  }
+  return str;
+}
+
+/**
  * Takes a condition string and splits it into its two sides and operator
  * passes that to the tester and returns the result
  *
@@ -173,9 +188,9 @@ function _esi_condition_lexer(condition: string): boolean {
     return false;
   }
 
-  const left = tokensSplit[1] || tokensSplit[2];
+  const left = strToNumOrStr(tokensSplit[1] || tokensSplit[2]);
   const op = op_replacements[tokensSplit[3]] || tokensSplit[3];
-  const right = tokensSplit[4] || tokensSplit[5];
+  const right = strToNumOrStr(tokensSplit[4] || tokensSplit[5]);
   return esiConditionTester(left, right, op);
 }
 
@@ -189,8 +204,8 @@ function _esi_condition_lexer(condition: string): boolean {
  * @returns {boolean} condition result
  */
 function esiConditionTester(
-  left: string,
-  right: string,
+  left: string | number,
+  right: string | number,
   operator: string,
 ): boolean {
   switch (operator) {
@@ -208,6 +223,9 @@ function esiConditionTester(
     case ">":
       return left > right;
     case "=~": {
+      left = left.toString();
+      right = right.toString();
+
       const regex = right.match(regexExtractor);
       if (!regex) return false;
       // Bloody javascript!
