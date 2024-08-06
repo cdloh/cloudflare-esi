@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/cdloh/cloudflare-esi/compare/v0.2.5...v0.3.0) (2024-08-06)
+
+
+### Features
+
+* add postBody Functionality ([0c9d7dc](https://github.com/cdloh/cloudflare-esi/commit/0c9d7dce6ce7e9e4c0372cc640d45efb0d7c8bc8))
+
 ## [0.2.5](https://github.com/cdloh/cloudflare-esi/compare/v0.2.4...v0.2.5) (2024-06-18)
 
 
