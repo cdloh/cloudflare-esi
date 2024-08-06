@@ -103,6 +103,7 @@ export type customESIVarsFunction = (
   request: Request,
 ) => Promise<customESIVars>;
 export type fetchFunction = (request: string | Request) => Promise<Response>;
+export type postBodyFunction = () => void | Promise<void>;
 
 const processorToken = "ESI";
 const processorVersion = 1.0;
@@ -111,11 +112,13 @@ export class esi {
   options: ESIConfig;
   esiFunction?: customESIVarsFunction;
   fetcher: fetchFunction;
+  postBodyFunction?: postBodyFunction;
 
   constructor(
     options?: ESIConfig,
     customESIFunction?: customESIVarsFunction,
     fetcher = fetch as fetchFunction,
+    postBodyFunction?: postBodyFunction,
   ) {
     const defaultConfig = {
       recursionLimit: 10,
@@ -123,7 +126,8 @@ export class esi {
     };
     this.options = { ...defaultConfig, ...options };
     this.fetcher = fetcher;
-    if (customESIFunction) this.esiFunction = customESIFunction;
+    this.esiFunction = customESIFunction;
+    this.postBodyFunction = postBodyFunction;
   }
 
   async parse(origRequest: Request, recursion = 0): Promise<Response> {
@@ -252,7 +256,7 @@ export class esi {
     /**
      * Flushes output to the Writeable Stream
      */
-    async function flush_output() {
+    const flush_output = async () => {
       // Can't call this if we're waiting for an sync option to complete
       if (pending) {
         return;
@@ -287,8 +291,13 @@ export class esi {
       if (ended && output.length === 0) {
         const writer = writable.getWriter();
         await writer.close();
+
+        // we're completely done now notify the post body function
+        if (this.postBodyFunction) {
+          this.postBodyFunction();
+        }
       }
-    }
+    };
 
     const writer = (text: string, esi: boolean) => {
       if (esi) {
