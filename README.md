@@ -19,6 +19,7 @@ Library supports all instructions that the Ledge parser supports. Also supports 
     - [varsCookieBlacklist](#varscookieblacklist)
   - [Custom ESI Vars Function](#custom-esi-vars-function)
   - [Custom Fetch Function](#custom-fetch-function)
+  - [Optional Post Body Function](#optional-post-body-function)
 - [Caching and upstream requests](#caching-and-upstream-requests)
 - [Edge Side Includes](#edge-side-includes)
   - [Regular expressions in conditions](#regular-expressions-in-conditions)
@@ -43,10 +44,10 @@ Using within your worker is as easy as including it and passing your request to 
 import esi from "cloudflare-esi"
 
 export default {
-	async fetch(request: Request, env: any, ctx: any) {
-		const parser = new esi()
-		return parser.parse(request)
-	}
+   async fetch(request: Request, env: any, ctx: any) {
+      const parser = new esi()
+      return parser.parse(request)
+   }
 }
 
 ```
@@ -58,6 +59,7 @@ new esi(
    options?: // Config
    customESIFunction?: // Custom ESI Vars Function
    fetcher?: // Custom Fetch Function
+   postBodyFunction?: // Optional function that will be called once the body has been completed
 )
 ```
 
@@ -244,6 +246,10 @@ new esi(undefined, undefined, customFetcher)
 
 ```
 
+
+### Optional Post Body Function
+
+If you need to do extra work once the body has completed streaming, eg you record how many fetches your custom fetcher handles. Or need to fire off some context.waitUntil functions at the end you can fire them after this function has been called.
 
 
 ## Caching and upstream requests
