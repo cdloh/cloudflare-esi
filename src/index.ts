@@ -184,6 +184,10 @@ export class esi {
       const resp = new Response(response.body, response);
       // We set the URL manually here as it doesn't come across from the copy˛
       Object.defineProperty(resp, "url", { value: response.url });
+      // process postBody function if relevant
+      if (this.postBodyFunction) {
+        this.postBodyFunction();
+      }
       return resp;
     }
 
