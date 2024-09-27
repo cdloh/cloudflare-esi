@@ -1,6 +1,6 @@
 {
   "name": "cloudflare-esi",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "repository": "cdloh/cloudflare-esi",
   "description": "ESI Parser built to run in Cloudflare workers",
   "main": "./dist/index.js",

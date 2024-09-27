@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/cdloh/cloudflare-esi/compare/v0.3.0...v0.3.1) (2024-09-27)
+
+
+### Bug Fixes
+
+* also trigger postbody function on non esi responses ([e84948a](https://github.com/cdloh/cloudflare-esi/commit/e84948a7f4997d3de5465fa6ffc860aa87f309d1))
+
 # [0.3.0](https://github.com/cdloh/cloudflare-esi/compare/v0.2.5...v0.3.0) (2024-08-06)
 
 
