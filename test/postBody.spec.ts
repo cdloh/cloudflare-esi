@@ -47,6 +47,7 @@ test("TEST 1: postBody Function", async () => {
   let count = 0;
   const postBody = function () {
     expect(count).toEqual(3);
+    count++;
     return;
   };
   parser = new esi(config, undefined, undefined, postBody);
@@ -80,4 +81,27 @@ test("TEST 1: postBody Function", async () => {
   expect(await res.text()).toEqual(
     `1\nFRAGMENT: \n2\nFRAGMENT: 2\n3FRAGMENT: 3\n`,
   );
+  expect(count).toEqual(4);
+});
+
+test("TEST 2: postBody Function non esi", async () => {
+  const url = `/post-body/test-2`;
+  let count = 0;
+  const postBody = function () {
+    expect(count).toEqual(1);
+    count++;
+    return;
+  };
+  parser = new esi(config, undefined, undefined, postBody);
+
+  routeHandler.add(url, function (req, res) {
+    count++;
+    res.writeHead(200);
+    res.end("hello i am a body");
+  });
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`hello i am a body`);
+  expect(count).toEqual(2);
 });
