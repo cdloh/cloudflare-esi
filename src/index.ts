@@ -32,7 +32,7 @@ export type ESIConfig = {
   contentTypes?: string[];
   disableThirdPartyIncludes?: boolean;
   recursionLimit?: number;
-  thirdPatyIncludesDomainWhitelist?: string[];
+  thirdPartyIncludesDomainWhitelist?: string[];
   varsCookieBlacklist?: string[];
 };
 

@@ -1661,7 +1661,7 @@ test("TEST 43: Disable third party includes", async () => {
 test("TEST 44: White list third party includes", async () => {
   const url = `/esi/test-44`;
   config.disableThirdPartyIncludes = true;
-  config.thirdPatyIncludesDomainWhitelist = ["jsonplaceholder.typicode.com"];
+  config.thirdPartyIncludesDomainWhitelist = ["jsonplaceholder.typicode.com"];
   parser = new esi(config);
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
