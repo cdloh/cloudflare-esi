@@ -102,7 +102,11 @@ export type customESIVars = {
 export type customESIVarsFunction = (
   request: Request,
 ) => Promise<customESIVars>;
-export type fetchFunction = (request: string | Request) => Promise<Response>;
+export type fetchFunction = (
+  request: RequestInfo,
+  init?: RequestInit,
+  ctx?: Request[],
+) => Promise<Response>;
 export type postBodyFunction = () => void | Promise<void>;
 
 const processorToken = "ESI";
@@ -113,11 +117,13 @@ export class esi {
   esiFunction?: customESIVarsFunction;
   fetcher: fetchFunction;
   postBodyFunction?: postBodyFunction;
+  ctx: Request[];
 
   constructor(
     options?: ESIConfig,
     customESIFunction?: customESIVarsFunction,
-    fetcher = fetch as fetchFunction,
+    fetcher = fetch,
+    ctx: Request[] = [],
     postBodyFunction?: postBodyFunction,
   ) {
     const defaultConfig = {
@@ -128,6 +134,7 @@ export class esi {
     this.fetcher = fetcher;
     this.esiFunction = customESIFunction;
     this.postBodyFunction = postBodyFunction;
+    this.ctx = ctx;
   }
 
   async parse(origRequest: Request, recursion = 0): Promise<Response> {
@@ -168,7 +175,11 @@ export class esi {
     };
 
     // grab the response from the upstream
-    const response = await this.fetcher(request);
+    const response = await this.fetcher(request, undefined, this.ctx.slice());
+
+    // pop this new request into our contexts
+    // do it after the request so only includes pick it up and not the request itself
+    this.ctx.push(request);
 
     // We can always return if any of the following
     // * Responses without bodies
@@ -233,6 +244,7 @@ export class esi {
       text,
       vars,
       this.fetcher,
+      this.ctx,
       this.esiFunction,
     );
 

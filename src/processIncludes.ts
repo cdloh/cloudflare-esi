@@ -12,6 +12,7 @@ const esi_include_pattern = /<esi:include\s*src="([^"]+)"\s*\/>/;
  * @param {string} chunk chunk of text that we are about to process
  * @param {boolean} evalVars Whether or not we need to process any esi Vars in the content
  * @param {fetchFunction} fetcher original fetch function from ESI Class
+ * @param {Request[]} ctx array of parent requests to provide context to includes
  * @param {customESIFunction} [customESIFunction] original customESIFunction if defined in the ESI Class
  * @returns {string} processed chunk as a string
  */
@@ -20,6 +21,7 @@ export async function process(
   chunk: string,
   evalVars: boolean,
   fetcher: fetchFunction,
+  ctx: Request[],
   customESIFunction?: customESIVarsFunction,
 ): Promise<string> {
   if (chunk.indexOf("<esi:include") == -1) {
@@ -49,6 +51,7 @@ export async function process(
         eventData,
         includeMatch[1], // pass the src tag straight through
         fetcher,
+        ctx,
         customESIFunction,
       );
 
@@ -74,6 +77,7 @@ export async function process(
  * @param {ESIEventData} eventData config for the current request
  * @param {string} include the full include tag from the content
  * @param {fetchFunction} fetcher original fetch function from ESI Class
+ * @param {Request[]} ctx array of parent requests to provide context to includes
  * @param {customESIFunction} [customESIFunction] original customESIFunction if defined in the ESI Class
  * @returns {string} result of the include as a string
  */
@@ -81,6 +85,7 @@ async function fetchInclude(
   eventData: ESIEventData,
   include: string,
   fetcher: fetchFunction,
+  ctx: Request[],
   customESIFunction?: customESIVarsFunction,
 ): Promise<string> {
   // replace any vars in the src string
@@ -126,7 +131,12 @@ async function fetchInclude(
   }
 
   // create a new parser with current config
-  const parser = new esi(eventData.config, customESIFunction, fetcher);
+  const parser = new esi(
+    eventData.config,
+    customESIFunction,
+    fetcher,
+    ctx.slice(),
+  );
   const includeRes = await parser.parse(req, eventData.recursion + 1);
 
   if (!includeRes.body) {

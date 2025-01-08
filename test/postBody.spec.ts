@@ -9,7 +9,6 @@ const esiHead = {
 };
 
 let parser: esi;
-let config: ESIConfig;
 const makeRequest = async function (request: string, details?: RequestInit) {
   const reqUrl = new URL(request, `http://localhost:${port}`).toString();
   const req = new Request(reqUrl, details);
@@ -50,7 +49,7 @@ test("TEST 1: postBody Function", async () => {
     count++;
     return;
   };
-  parser = new esi(config, undefined, undefined, postBody);
+  parser = new esi(undefined, undefined, undefined, undefined, postBody);
 
   const printFragment = function (
     req: http.IncomingMessage,
@@ -92,7 +91,7 @@ test("TEST 2: postBody Function non esi", async () => {
     count++;
     return;
   };
-  parser = new esi(config, undefined, undefined, postBody);
+  parser = new esi(undefined, undefined, undefined, undefined, postBody);
 
   routeHandler.add(url, function (req, res) {
     count++;
