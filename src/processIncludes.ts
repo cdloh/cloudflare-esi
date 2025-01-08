@@ -161,11 +161,11 @@ function isIncludeOnSameDomain(requestURL: URL, srcURL: URL): boolean {
  */
 function thirdPartyWhitelisted(config: ESIConfig, host: string): boolean {
   if (config.disableThirdPartyIncludes) {
-    if (!config.thirdPatyIncludesDomainWhitelist) {
+    if (!config.thirdPartyIncludesDomainWhitelist) {
       return false;
     }
 
-    return config.thirdPatyIncludesDomainWhitelist.includes(host);
+    return config.thirdPartyIncludesDomainWhitelist.includes(host);
   }
 
   return true;
