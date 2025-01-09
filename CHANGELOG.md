@@ -1,3 +1,15 @@
+# [0.4.0](https://github.com/cdloh/cloudflare-esi/compare/v0.3.1...v0.4.0) (2025-01-09)
+
+
+### Bug Fixes
+
+* incorrectly named thirdPartyIncludesDomainWhitelist ([a72442a](https://github.com/cdloh/cloudflare-esi/commit/a72442acf0df84e790d6f0978b4809f84e62bab2))
+
+
+### Features
+
+* pass request context to fetch function ([402805e](https://github.com/cdloh/cloudflare-esi/commit/402805ec8cf3a2b59f034fc21c37a7f47d13daa8))
+
 ## [0.3.1](https://github.com/cdloh/cloudflare-esi/compare/v0.3.0...v0.3.1) (2024-09-27)
 
 
