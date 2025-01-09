@@ -91,3 +91,52 @@ test("TEST 4: Custom Fetcher might want to use the POST Body", async () => {
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual("false");
 });
+
+test("TEST 5: Custom Fetcher should pass the ctx down (ie parent requets)", async () => {
+  const url = `/esi/test-5`;
+  let responseNo = 0;
+  const customFetch: fetchFunction = async function (request, init, ctx) {
+    responseNo++;
+    if (responseNo == 1)
+      return new Response(
+        `BEFORE MY CTX SHOULD JUST BE ME: ${ctx?.length} <esi:include src="${url}/fragment_1" /> AFTER`,
+        { headers: esiHead },
+      );
+    return new Response(`MY CTX SHOULD JUST BE ME AND PARENT: ${ctx?.length}`);
+  };
+  parser = new esi(config, undefined, customFetch);
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(
+    "BEFORE MY CTX SHOULD JUST BE ME: 0 MY CTX SHOULD JUST BE ME AND PARENT: 1 AFTER",
+  );
+  expect(responseNo).toBe(2);
+});
+
+test("TEST 6: Custom Fetcher should pass the ctx down across multiple esi", async () => {
+  const url = `/esi/test-6`;
+  let responseNo = 0;
+  const customFetch: fetchFunction = async function (request, init, ctx) {
+    responseNo++;
+    if (responseNo == 1)
+      return new Response(
+        `BEFORE MY CTX SHOULD JUST BE ME: ${ctx?.length} <esi:include src="${url}/fragment_1" /> <esi:include src="${url}/fragment_2" /> <esi:include src="${url}/fragment_3" /> AFTER`,
+        { headers: esiHead },
+      );
+    if (responseNo == 3)
+      return new Response(
+        `BEFORE MY CTX SHOULD JUST BE ME AND MY PARENT: ${ctx?.length} <esi:include src="${url}/sub_fragment_1" /> AFTER`,
+        { headers: esiHead },
+      );
+    return new Response(`MY CTX SHOULD JUST BE ME AND PARENT: ${ctx?.length}`);
+  };
+  parser = new esi(config, undefined, customFetch);
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(
+    "BEFORE MY CTX SHOULD JUST BE ME: 0 MY CTX SHOULD JUST BE ME AND PARENT: 1 BEFORE MY CTX SHOULD JUST BE ME AND MY PARENT: 1 MY CTX SHOULD JUST BE ME AND PARENT: 2 AFTER MY CTX SHOULD JUST BE ME AND PARENT: 1 AFTER",
+  );
+  expect(responseNo).toBe(5);
+});
