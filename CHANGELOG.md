@@ -1,3 +1,10 @@
+## [0.4.1](https://github.com/cdloh/cloudflare-esi/compare/v0.4.0...v0.4.1) (2025-01-10)
+
+
+### Bug Fixes
+
+* redo the fetch function definition to not require request init details ([0f4bb71](https://github.com/cdloh/cloudflare-esi/commit/0f4bb718c0cf20e42248028cfda62cf23f2fa41e))
+
 # [0.4.0](https://github.com/cdloh/cloudflare-esi/compare/v0.3.1...v0.4.0) (2025-01-09)
 
 
