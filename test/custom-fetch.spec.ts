@@ -95,7 +95,7 @@ test("TEST 4: Custom Fetcher might want to use the POST Body", async () => {
 test("TEST 5: Custom Fetcher should pass the ctx down (ie parent requets)", async () => {
   const url = `/esi/test-5`;
   let responseNo = 0;
-  const customFetch: fetchFunction = async function (request, init, ctx) {
+  const customFetch: fetchFunction = async function (request, ctx) {
     responseNo++;
     if (responseNo == 1)
       return new Response(
@@ -117,7 +117,7 @@ test("TEST 5: Custom Fetcher should pass the ctx down (ie parent requets)", asyn
 test("TEST 6: Custom Fetcher should pass the ctx down across multiple esi", async () => {
   const url = `/esi/test-6`;
   let responseNo = 0;
-  const customFetch: fetchFunction = async function (request, init, ctx) {
+  const customFetch: fetchFunction = async function (request, ctx) {
     responseNo++;
     if (responseNo == 1)
       return new Response(

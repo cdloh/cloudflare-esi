@@ -104,8 +104,7 @@ export type customESIVarsFunction = (
 ) => Promise<customESIVars>;
 export type fetchFunction = (
   request: RequestInfo,
-  init?: RequestInit,
-  ctx?: Request[],
+  ctx: Request[],
 ) => Promise<Response>;
 export type postBodyFunction = () => void | Promise<void>;
 
@@ -122,7 +121,7 @@ export class esi {
   constructor(
     options?: ESIConfig,
     customESIFunction?: customESIVarsFunction,
-    fetcher = fetch,
+    fetcher: fetchFunction = defaultFetch,
     ctx: Request[] = [],
     postBodyFunction?: postBodyFunction,
   ) {
@@ -175,7 +174,7 @@ export class esi {
     };
 
     // grab the response from the upstream
-    const response = await this.fetcher(request, undefined, this.ctx.slice());
+    const response = await this.fetcher(request, this.ctx.slice());
 
     // pop this new request into our contexts
     // do it after the request so only includes pick it up and not the request itself
@@ -459,6 +458,20 @@ export function getProcessorVersion(): number {
  */
 export function getProcessorVersionString(): string {
   return processorVersion.toFixed(1);
+}
+/**
+ * Default fetch function we use if none is provided
+ *
+ * @param {RequestInfo} req request to fetch
+ * @param {Request[]} ctx request ctx (parent requests)
+ * @returns {Promise<Response>} - processor supported version
+ */
+async function defaultFetch(
+  req: RequestInfo,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ctx: Request[],
+): Promise<Response> {
+  return fetch(req);
 }
 
 export default esi;
