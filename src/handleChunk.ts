@@ -8,7 +8,7 @@ import { tagParser } from "./tagParser";
  * @returns {void}
  */
 type writerFunction = (text: string, esi: boolean) => void;
-type handleFunction = (value: string, done: boolean) => Promise<void>;
+type handleFunction = (value: string, done: boolean) => void;
 
 /**
  *  Creates a chunk handler and returns a
@@ -26,13 +26,13 @@ export function create(writer: writerFunction): handleFunction {
     }
   };
 
-  return async function (value: string, done: boolean): Promise<void> {
+  return function (value: string, done: boolean): void {
     value = prev_chunk + value;
     prev_chunk = "";
 
     const parser = new tagParser(value);
     do {
-      const [tag, before, after] = await parser.next();
+      const [tag, before, after] = parser.next();
 
       // Always write before if we have it
       writeString(before);
@@ -64,8 +64,8 @@ export function create(writer: writerFunction): handleFunction {
       // eslint-disable-next-line no-constant-condition
     } while (true);
 
-    // Check if we had something left over
-    // But we didnt write it
+    // ensure we write anything left over
+    // when we are done
     if (done) {
       writeString(prev_chunk);
     }

@@ -5,17 +5,14 @@ import { tagParser } from "./tagParser";
  *
  * @param {string} chunk Chunk of text to process
  * @param {string[]} [res] Array of chunks of text already processed (used internally within function)
- * @returns {Promise<string>} processed string
+ * @returns {string} processed string
  */
-export async function process(
-  chunk: string,
-  res: Array<string> = [],
-): Promise<string> {
+export function process(chunk: string, res: Array<string> = []): string {
   const parser = new tagParser(chunk);
   let hasEscaping = false;
 
   do {
-    const [tag, before, after] = await parser.next("!--esi");
+    const [tag, before, after] = parser.next("!--esi");
 
     if (tag && tag.closing && tag.contents) {
       hasEscaping = true;

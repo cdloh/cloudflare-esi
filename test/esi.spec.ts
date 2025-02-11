@@ -416,7 +416,7 @@ test("TEST 7h: Compile instructions if ESI delegation is enabled by IP but no Ca
   expect(await res.text()).toEqual(`a=1`);
 });
 
-test("TEST 8: Response downstrean cacheability is zeroed when ESI processing", async () => {
+test("TEST 8: Response downstream cacheability is zeroed when ESI processing", async () => {
   const url = `/esi/test-8`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, {
@@ -1862,7 +1862,7 @@ test("TEST 48: POST With body", async () => {
   expect(await res.text()).toEqual(postBody);
 });
 
-test("TEST 48: Mutliple ESI Includes next to each other", async () => {
+test("TEST 48: Multiple ESI Includes next to each other", async () => {
   const url = `/esi/test-48`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
@@ -1885,7 +1885,7 @@ test("TEST 48: Mutliple ESI Includes next to each other", async () => {
   expect(await res.text()).toEqual(`START:\nFRAGMENT\nFRAGMENT\n:END`);
 });
 
-test("TEST 49: Mutliple ESI Includes next to each other in choose", async () => {
+test("TEST 49: Multiple ESI Includes next to each other in choose", async () => {
   const url = `/esi/test-49`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
@@ -1930,7 +1930,7 @@ describe("TEST 51: ESI Args that lead with ints shouldn't convert to ints", () =
     { arg: "1719,1732", result: "second-lineage" },
     { arg: "1719,1918", result: "third-lineage" },
     { arg: "1719,1922", result: "forth-lineage" },
-    { arg: "1719,1926", result: "fith-lineage" },
+    { arg: "1719,1926", result: "fifth-lineage" },
     { arg: "1719,2000", result: "sixth-lineage" },
     { arg: "2000", result: "seventh-lineage" },
     { arg: "2001", result: "eighth-lineage" },
@@ -1946,7 +1946,7 @@ describe("TEST 51: ESI Args that lead with ints shouldn't convert to ints", () =
     <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1732)(?:,|$)/'">second-lineage</esi:when>
     <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1918)(?:,|$)/'">third-lineage</esi:when>
     <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1922)(?:,|$)/'">forth-lineage</esi:when>
-    <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1926)(?:,|$)/'">fith-lineage</esi:when>
+    <esi:when test="$(ESI_ARGS{lineage}) =~ '/(?:^|,)(1926)(?:,|$)/'">fifth-lineage</esi:when>
     <esi:when test="$(ESI_ARGS{lineage}) == '1719,2000'">sixth-lineage</esi:when>
     <esi:when test="$(ESI_ARGS{lineage}) == '2000'">seventh-lineage</esi:when>
     <esi:when test="$(ESI_ARGS{lineage}) >= '800'">eighth-lineage</esi:when>

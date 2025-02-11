@@ -151,7 +151,7 @@ This is useful if your client is sending a sensitive cookie that you don't ever 
 ### Custom ESI Vars Function
 
 ```
-export type customESIVarsFunction = (request: Request) => Promise<customESIVars>;
+export type customESIVarsFunction = (request: Request) => Promise<customESIVars> | customESIVars;
 export type customESIVars = {
    [key: string]: string | { [key: string]: string };
 };
@@ -159,14 +159,14 @@ export type customESIVars = {
 
 If you want to inject custom ESI vars into the parser per request you can pass the class a custom async function that will be evaluated each request.
 
-The async function accepts a request object and returns an object.
+The function accepts a request object, returns an object and can be async.
 
 The object values can either be strings or objects. If the value is an object it the ESIVar must be refrenced with a key in the ESI variable or the default variable will be returned.
 
 eg that pulls GEOIP data out of the Request and injects it as `GEOIP_X` ESI Vars
 
 ```javascript
-const geoIPVarsFromRequest = async function (request) {
+const geoIPVarsFromRequest = function (request) {
   let customVariables = {};
   let cfData = request.cf;
   let geoipVars = [

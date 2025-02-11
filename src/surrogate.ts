@@ -12,11 +12,9 @@ import { getheaderToken } from "./headerUtils";
  * If we have Colo data in the Request object we add that to our identifier
  *
  * @param {Request} request Request to modify
- * @returns {Promise<Request>} Request with SurrogateControl header added
+ * @returns {Request} Request with SurrogateControl header added
  */
-export async function advertiseSurrogateControl(
-  request: Request,
-): Promise<Request> {
+export function advertiseSurrogateControl(request: Request): Request {
   let coloName = "";
   if (request.cf && request.cf.colo) {
     coloName = `-${request.cf.colo}`;
@@ -33,12 +31,12 @@ export async function advertiseSurrogateControl(
  *
  * @param {Request} request Request to confirm against
  * @param {ESIConfig} config Config for the current request
- * @returns {Promise<boolean>} result
+ * @returns {boolean} result
  */
-export async function canDelegateToSurrogate(
+export function canDelegateToSurrogate(
   request: Request,
   config: ESIConfig,
-): Promise<boolean> {
+): boolean {
   const surrogates = config.allowSurrogateDelegation;
   if (surrogates === undefined || surrogates === false) return false;
 
