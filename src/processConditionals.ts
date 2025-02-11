@@ -23,7 +23,7 @@ export async function process(
   let hasConditionals = false;
 
   do {
-    const [choose, ch_before, ch_after] = await parser.next("esi:choose");
+    const [choose, ch_before, ch_after] = parser.next("esi:choose");
 
     if (choose && choose.closing) {
       hasConditionals = true;
@@ -43,7 +43,7 @@ export async function process(
       let otherwise = null;
 
       do {
-        const [tag, ,] = await innerParser.next("esi:when|esi:otherwise");
+        const [tag, ,] = innerParser.next("esi:when|esi:otherwise");
 
         if (tag && tag.closing && tag.whole && tag.contents) {
           if (tag.tagname == "esi:when" && !whenMatched) {

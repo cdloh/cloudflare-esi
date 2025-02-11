@@ -13,12 +13,9 @@ const esiLessArrow = />/g;
  *
  * @param {ESIEventData} eventData event data for the current request
  * @param {string} chunk string to process
- * @returns {Promise<string>} processed string
+ * @returns {string} processed string
  */
-export async function process(
-  eventData: ESIEventData,
-  chunk: string,
-): Promise<string> {
+export function process(eventData: ESIEventData, chunk: string): string {
   if (chunk.indexOf("esi:vars") == -1) {
     return chunk;
   }

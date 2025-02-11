@@ -21,10 +21,10 @@ import { getheaderToken } from "./headerUtils";
  * @property {string[]} contentTypes - Array of strings of content types that the parser should parse for ESI Tags
  * Note: That these are case sensitive. See - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
  * @property {boolean} disableThirdPartyIncludes - Whether or not to enable third party includes (includes from other domains)
- * @property {number} [recursionLimit] - Levels of recusion the parser is allowed to go do
- * think includes that include themselves causing recusion
+ * @property {number} [recursionLimit] - Levels of recursion the parser is allowed to include before bailing out
+ * think includes that include themselves causing recursion
  * @default 10
- * @property {string[]} thirdPatyIncludesDomainWhitelist - If third party includes are disabled you can white list them by including domains here
+ * @property {string[]} thirdPartyIncludesDomainWhitelist - If third party includes are disabled you can white list them by including domains here
  * @property {string[]} varsCookieBlacklist - Array of strings of cookies that will be blacklisted from being expanded in esi VARs.
  */
 export type ESIConfig = {
@@ -47,14 +47,14 @@ export type ESIVars = {
  * ESI Event Data for the Current Request
  *
  * @property {ESIConfig} config - ESIConfig when class was created
- * @property {object} headers - All headers of the request uppercased
+ * @property {object} headers - All headers of the request in uppercase
  * @property {string} method - Method of the request
  * @property {URLSearchParams} esiArgs - Any ESI Arguments extracted from the URL Search params of the original request
  * Will be a URLSearchParam encoded object
  * @property {customESIVars} customVars - If a custom ESI Vars function is supplied this will be the result of that function
  * @property {URL} url - URL Object of the Request with ESI Args removed
  * @property {Request} request - Request object after ESI Args have been removed
- * @property {number} recursion - Recusion level we're currently at
+ * @property {number} recursion - Recursion level we're currently at
  */
 export type ESIEventData = {
   /**
@@ -63,7 +63,7 @@ export type ESIEventData = {
   config: ESIConfig;
   /**
    * All headers of the current Request in {Object}
-   * All headers are uppercassed with - being converted to _
+   * All headers are in uppercase and - is converted to _
    */
   headers: { [key: string]: string };
   /**
@@ -101,7 +101,7 @@ export type customESIVars = {
 };
 export type customESIVarsFunction = (
   request: Request,
-) => Promise<customESIVars>;
+) => Promise<customESIVars> | customESIVars;
 export type fetchFunction = (
   request: RequestInfo,
   ctx: Request[],
@@ -150,7 +150,7 @@ export class esi {
     // Remove ESI Vars if they're in the request
     // Return a brand new request
     // eslint-disable-next-line
-    let [request, esiVars] = await getVars(origRequest);
+    let [request, esiVars] = getVars(origRequest);
 
     // Load custom values if we can
     let customESIVariables;
@@ -159,7 +159,7 @@ export class esi {
     }
 
     // Add SurrogateControl header or append to it
-    request = await advertiseSurrogateControl(request);
+    request = advertiseSurrogateControl(request);
 
     // pack our nice stuff in
     const eventData: ESIEventData = {
@@ -189,7 +189,7 @@ export class esi {
       !response.body ||
       !this.validContentType(response) ||
       !this.validSurrogateControl(response) ||
-      (await canDelegateToSurrogate(origRequest, this.options))
+      canDelegateToSurrogate(origRequest, this.options)
     ) {
       const resp = new Response(response.body, response);
       // We set the URL manually here as it doesn't come across from the copy˛
@@ -230,10 +230,10 @@ export class esi {
   }
 
   async handleESI(eventData: ESIEventData, text: string): Promise<string> {
-    text = await processEscaping(text);
+    text = processEscaping(text);
     text = processComments(text);
     text = processRemove(text);
-    text = await processESIVars(eventData, text);
+    text = processESIVars(eventData, text);
     let vars = false;
     [text, vars] = await processConditionals(eventData, text);
 
@@ -249,15 +249,16 @@ export class esi {
 
     return text;
   }
+  // eslint-disable-next-line require-await
   async handleTEXT(eventData: ESIEventData, text: string): Promise<string> {
     return text;
   }
 
-  async streamBody(
+  streamBody(
     eventData: ESIEventData,
     readable: ReadableStream,
     writable: WritableStream,
-  ): Promise<void> {
+  ) {
     const reader = readable.getReader();
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
@@ -328,12 +329,12 @@ export class esi {
 
     const handler = createHandleChunk(writerBound);
 
-    reader.read().then(async function processBlob(blob): Promise<void> {
+    reader.read().then(function processBlob(blob): Promise<void> | undefined {
       const chunk: ArrayBuffer = blob.value;
       const done: boolean = blob.done;
       // decode it
       const decodedChunk: string = decoder.decode(chunk, { stream: true });
-      await handler(decodedChunk, done);
+      handler(decodedChunk, done);
 
       // we're done bail out
       if (done) {
@@ -390,9 +391,9 @@ const esiArgsRegex = /^esi_(\S+)/;
  * Return a brand new mutatable Request along with an ESIVars object
  *
  * @param {Request} request - Original Request
- * @returns {Promise<[Request, ESIVars]>} - Mutatable Request and ESIVars
+ * @returns {[Request, ESIVars]} - Mutatable Request and ESIVars
  */
-async function getVars(request: Request): Promise<[Request, ESIVars]> {
+function getVars(request: Request): [Request, ESIVars] {
   const vars: ESIVars = {
     headers: {},
     method: request.method,
@@ -466,7 +467,7 @@ export function getProcessorVersionString(): string {
  * @param {Request[]} ctx request ctx (parent requests)
  * @returns {Promise<Response>} - processor supported version
  */
-async function defaultFetch(
+function defaultFetch(
   req: RequestInfo,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ctx: Request[],

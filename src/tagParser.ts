@@ -23,9 +23,7 @@ export class tagParser {
     this.next = this.next.bind(this);
   }
 
-  async next(
-    tagname?: string,
-  ): Promise<[tag | null, string | undefined, string | undefined]> {
+  next(tagname?: string): [tag | null, string | undefined, string | undefined] {
     const tag = this.findWholeTag(tagname);
     let before, after;
 
