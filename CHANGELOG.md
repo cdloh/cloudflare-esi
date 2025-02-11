@@ -1,3 +1,10 @@
+## [0.4.2](https://github.com/cdloh/cloudflare-esi/compare/v0.4.1...v0.4.2) (2025-02-11)
+
+
+### Bug Fixes
+
+* Cleanup useless async and awaits & custom ESI Vars function doesn't have to be async ([6ee4f6b](https://github.com/cdloh/cloudflare-esi/commit/6ee4f6bd08a1a61a8afe4f7e776de8c70616aac3))
+
 ## [0.4.1](https://github.com/cdloh/cloudflare-esi/compare/v0.4.0...v0.4.1) (2025-01-10)
 
 
