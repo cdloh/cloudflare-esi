@@ -24,6 +24,8 @@ import { getheaderToken } from "./headerUtils";
  * @property {number} [recursionLimit] - Levels of recursion the parser is allowed to include before bailing out
  * think includes that include themselves causing recursion
  * @default 10
+ * @property {string} surrogateControlHeader - Name of the header that the library will check for Surrogate-Control
+ * We allow customisation as Cloudflare priorities Surrogate-Control over Cache-Control
  * @property {string[]} thirdPartyIncludesDomainWhitelist - If third party includes are disabled you can white list them by including domains here
  * @property {string[]} varsCookieBlacklist - Array of strings of cookies that will be blacklisted from being expanded in esi VARs.
  */
@@ -32,8 +34,9 @@ export type ESIConfig = {
   contentTypes?: string[];
   disableThirdPartyIncludes?: boolean;
   recursionLimit?: number;
-  thirdPartyIncludesDomainWhitelist?: string[];
-  varsCookieBlacklist?: string[];
+  surrogateControlHeader?: string;
+  thirdPartyIncludesDomainWhitelist?: string[] | null;
+  varsCookieBlacklist?: string[] | null;
 };
 
 export type ESIVars = {
@@ -60,7 +63,7 @@ export type ESIEventData = {
   /**
    * {ESIConfig} for the current Request
    */
-  config: ESIConfig;
+  config: FullESIConfig;
   /**
    * All headers of the current Request in {Object}
    * All headers are in uppercase and - is converted to _
@@ -107,12 +110,24 @@ export type fetchFunction = (
   ctx: Request[],
 ) => Promise<Response>;
 export type postBodyFunction = () => void | Promise<void>;
+export type FullESIConfig = Required<ESIConfig>;
 
 const processorToken = "ESI";
 const processorVersion = 1.0;
+const defaultSurrogateControlHeader = "Surrogate-Control";
+
+const defaultConfig: FullESIConfig = {
+  allowSurrogateDelegation: false,
+  contentTypes: ["text/html", "text/plain"],
+  disableThirdPartyIncludes: false,
+  recursionLimit: 10,
+  surrogateControlHeader: defaultSurrogateControlHeader,
+  thirdPartyIncludesDomainWhitelist: null,
+  varsCookieBlacklist: null,
+};
 
 export class esi {
-  options: ESIConfig;
+  options: FullESIConfig;
   esiFunction?: customESIVarsFunction;
   fetcher: fetchFunction;
   postBodyFunction?: postBodyFunction;
@@ -125,10 +140,6 @@ export class esi {
     ctx: Request[] = [],
     postBodyFunction?: postBodyFunction,
   ) {
-    const defaultConfig = {
-      recursionLimit: 10,
-      contentTypes: ["text/html", "text/plain"],
-    };
     this.options = { ...defaultConfig, ...options };
     this.fetcher = fetcher;
     this.esiFunction = customESIFunction;
@@ -221,7 +232,7 @@ export class esi {
     mutResponse.headers.delete("content-length");
 
     // Remove surrogate-control
-    mutResponse.headers.delete("Surrogate-Control");
+    mutResponse.headers.delete(this.options.surrogateControlHeader);
 
     // `streamBody` will free the request context when finished
     this.streamBody(eventData, response.body, writable);
@@ -362,7 +373,7 @@ export class esi {
   }
 
   validSurrogateControl(response: Response): boolean {
-    const sControl = response.headers.get("Surrogate-Control");
+    const sControl = response.headers.get(this.options.surrogateControlHeader);
     if (!sControl) {
       return false;
     }
