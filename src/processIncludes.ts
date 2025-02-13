@@ -1,5 +1,5 @@
 import { replace_vars } from "./processESIVars";
-import esi, { customESIVarsFunction, ESIConfig, fetchFunction } from ".";
+import esi, { customESIVarsFunction, FullESIConfig, fetchFunction } from ".";
 import { ESIEventData } from ".";
 
 const esi_include_pattern = /<esi:include\s*src="([^"]+)"\s*\/>/;
@@ -169,7 +169,7 @@ function isIncludeOnSameDomain(requestURL: URL, srcURL: URL): boolean {
  * @param {string} host host to check against
  * @returns {boolean} true if domain is whitelisted. false if not
  */
-function thirdPartyWhitelisted(config: ESIConfig, host: string): boolean {
+function thirdPartyWhitelisted(config: FullESIConfig, host: string): boolean {
   if (config.disableThirdPartyIncludes) {
     if (!config.thirdPartyIncludesDomainWhitelist) {
       return false;

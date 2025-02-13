@@ -1,5 +1,5 @@
 import {
-  ESIConfig,
+  FullESIConfig,
   getProcessorToken,
   getProcessorVersion,
   getProcessorVersionString,
@@ -35,10 +35,10 @@ export function advertiseSurrogateControl(request: Request): Request {
  */
 export function canDelegateToSurrogate(
   request: Request,
-  config: ESIConfig,
+  config: FullESIConfig,
 ): boolean {
   const surrogates = config.allowSurrogateDelegation;
-  if (surrogates === undefined || surrogates === false) return false;
+  if (surrogates === false) return false;
 
   const surrogateCapability = request.headers.get("Surrogate-Capability");
   if (surrogateCapability) {

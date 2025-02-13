@@ -1979,3 +1979,39 @@ test("TEST 52: Empty variables can be compared", async () => {
   expect(checkSurrogate(res)).toBeTruthy();
   expect(await res.text()).toEqual(`x empty;y empty;`);
 });
+
+test("TEST 53: When custom Surrogate-Control header is set ignore normal Surrogate-Control (dont remove default)", async () => {
+  const url = `/esi/test-53`;
+  config.surrogateControlHeader = "X-Custom-Surrogate-Control";
+  parser = new esi(config);
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, esiHead);
+    res.end(`START <esi:include src="${url}/test" /> END`);
+  });
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeFalsy();
+  expect(await res.text()).toEqual(
+    `START <esi:include src=\"/esi/test-53/test\" /> END`,
+  );
+});
+
+test("TEST 54: When custom Surrogate-Control header is set ESI Worker (remove default)", async () => {
+  const url = `/esi/test-54`;
+  config.surrogateControlHeader = "X-Custom-Surrogate-Control";
+  parser = new esi(config);
+  routeHandler.add(url, function (req, res) {
+    res.writeHead(200, {
+      "Content-Type": "text/html",
+      "X-Custom-Surrogate-Control": `content="ESI/1.0"`,
+    });
+    res.end(`START <esi:include src="${url}/test" /> END`);
+  });
+  routeHandler.add(`${url}/test`, function (req, res) {
+    res.end("Hello");
+  });
+  const res = await makeRequest(url);
+  expect(res.ok).toBeTruthy();
+  expect(checkSurrogate(res)).toBeTruthy();
+  expect(await res.text()).toEqual(`START Hello END`);
+});

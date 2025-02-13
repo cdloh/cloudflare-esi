@@ -15,7 +15,8 @@ Library supports all instructions that the Ledge parser supports. Also supports 
     - [contentTypes](#contenttypes)
     - [disableThirdPartyIncludes](#disablethirdpartyincludes)
     - [recursionLimit](#recursionlimit)
-    - [thirdPatyIncludesDomainWhitelist](#thirdpatyincludesdomainwhitelist)
+    - [surrogateControlHeader](#surrogatecontrolheader)
+    - [thirdPartyIncludesDomainWhitelist](#thirdpartyincludesdomainwhitelist)
     - [varsCookieBlacklist](#varscookieblacklist)
   - [Custom ESI Vars Function](#custom-esi-vars-function)
   - [Custom Fetch Function](#custom-fetch-function)
@@ -73,7 +74,8 @@ export type ESIConfig = {
   contentTypes?: string[];
   disableThirdPartyIncludes?: boolean;
   recursionLimit?: number;
-  thirdPatyIncludesDomainWhitelist?: string[];
+  surrogateControlHeader?: string;
+  thirdPartyIncludesDomainWhitelist?: string[];
   varsCookieBlacklist?: string[];
 };
 
@@ -83,7 +85,8 @@ const defaultConfig = {
    contentTypes: ["text/html", "text/plain"],
    disableThirdPartyIncludes: false,
    recursionLimit: 10,
-   thirdPatyIncludesDomainWhitelist: [],
+   surrogateControlHeader: 'Surrogate-Control',
+   thirdPartyIncludesDomainWhitelist: [],
    varsCookieBlacklist: []
 }
 ```
@@ -117,7 +120,7 @@ Whether or not to enable third party includes (includes from other domains).
 
 If set to false and an include points to another domain the include will be returned as a blank string
 
-Also see thirdPatyIncludesDomainWhitelist for usage with this.
+Also see thirdPartyIncludesDomainWhitelist for usage with this.
 
 
 
@@ -126,10 +129,17 @@ Also see thirdPatyIncludesDomainWhitelist for usage with this.
 * *default*: `10`
 * *type*: `number`
 
-Levels of recusion the parser is allowed to go do. Think includes that include themselves causing recusion
+Levels of recursion the parser is allowed to go do. Think includes that include themselves causing recusion
+
+#### surrogateControlHeader
+
+* *default*: `Surrogate Control`
+* *type*: `string`
+
+Name of the header that the library will check for Surrogate-Control. We allow customisation as Cloudflare priorities Surrogate-Control over Cache-Control
 
 
-#### thirdPatyIncludesDomainWhitelist
+#### thirdPartyIncludesDomainWhitelist
 
 * *default*: `[]`
 * *type*: `string[]`
