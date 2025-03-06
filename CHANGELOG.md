@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/cdloh/cloudflare-esi/compare/v0.4.2...v0.5.0) (2025-03-06)
+
+
+### Features
+
+* allow setting a custom Surrogate-Control header ([69bd80b](https://github.com/cdloh/cloudflare-esi/commit/69bd80b0e93e6f0d4858df78c96d0e2517fa1f50)), closes [#282](https://github.com/cdloh/cloudflare-esi/issues/282)
+
 ## [0.4.2](https://github.com/cdloh/cloudflare-esi/compare/v0.4.1...v0.4.2) (2025-02-11)
 
 
