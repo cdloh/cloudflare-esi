@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/cdloh/cloudflare-esi/compare/v0.5.0...v0.5.1) (2025-03-19)
+
+
+### Bug Fixes
+
+* dont clone request when creating a mutable request ([090b166](https://github.com/cdloh/cloudflare-esi/commit/090b16638b156d3cc55a0ffc6d427fa519031199))
+
 # [0.5.0](https://github.com/cdloh/cloudflare-esi/compare/v0.4.2...v0.5.0) (2025-03-06)
 
 
