@@ -1722,7 +1722,7 @@ test("TEST 45b: Cookies and Authorization don't propagate to fragment on differe
   const url = `/esi/test-45b`;
   routeHandler.add(url, function (req, res) {
     res.writeHead(200, esiHead);
-    res.end(`<esi:include src="https://httpbin.org/get" />`);
+    res.end(`<esi:include src="https://httpbun.org/get" />`);
   });
   const res = await makeRequest(url, {
     method: "POST",

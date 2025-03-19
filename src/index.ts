@@ -106,7 +106,7 @@ export type customESIVarsFunction = (
   request: Request,
 ) => Promise<customESIVars> | customESIVars;
 export type fetchFunction = (
-  request: RequestInfo,
+  request: Request,
   ctx: Request[],
 ) => Promise<Response>;
 export type postBodyFunction = () => void | Promise<void>;
@@ -439,7 +439,7 @@ function getVars(request: Request): [Request, ESIVars] {
   }
 
   // return a brand new
-  return [new Request(current.toString(), request.clone()), vars];
+  return [new Request(current.toString(), request), vars];
 }
 
 /**
