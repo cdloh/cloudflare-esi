@@ -45,6 +45,12 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: [ lint, test ]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for trusted publishing and npm provenance
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,17 +59,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24.x
-          registry-url: 'https://registry.npmjs.org'
-        env:
-          NPM_TOKEN: "${{ secrets.NPM_TOKEN }}"
-          NPM_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}"
-          NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}"
 
       - run: npm ci
       - run: npm run build
+      - run: npm audit signatures
       - run: npm run semantic-release
         env:
           GH_TOKEN: "${{ secrets.GH_TOKEN }}"
-          NPM_TOKEN: "${{ secrets.NPM_TOKEN }}"
-          NPM_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}"
-          NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}"
