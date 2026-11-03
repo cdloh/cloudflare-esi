@@ -1,7 +1,6 @@
-import { checkSurrogate, testResponse, urlHandler } from "./helpers";
+import { expect, test } from "vitest";
+import { checkSurrogate, reply, testingDetails, urlHandler } from "./helpers";
 import { esi, ESIConfig } from "../src";
-import { AddressInfo } from "net";
-import http from "http";
 
 const esiHead = {
   "Content-Type": "text/html",
@@ -16,30 +15,7 @@ const makeRequest = async function (request: string, details?: RequestInit) {
 };
 
 const routeHandler = new urlHandler();
-// @ts-ignore
-const server = http.createServer(routeHandler.route);
-let port = 0;
-const testingDetails = {
-  port: 0,
-  hostname: "localhost",
-  proto: "http:",
-  url: `http://localhost:0`,
-};
-
-beforeAll(() => {
-  // Setup a basic HTTP server to handle traffic
-  server.listen(0);
-  const address = server.address() as AddressInfo;
-  port = address.port;
-  testingDetails.port = address.port;
-  testingDetails.url = `http://localhost:${port}`;
-});
-
-afterAll((done) => {
-  server.close(() => {
-    done();
-  });
-});
+const port = testingDetails.port;
 
 test("TEST 1: postBody Function", async () => {
   const url = `/post-body/test-1`;
@@ -51,23 +27,21 @@ test("TEST 1: postBody Function", async () => {
   };
   parser = new esi(undefined, undefined, undefined, undefined, postBody);
 
-  const printFragment = function (
-    req: http.IncomingMessage,
-    res: testResponse,
-  ) {
+  const printFragment = function (req: Request) {
+    const res = reply();
     count++;
     const url = new URL(req.url as string, `http://localhost:${port}`);
     const query = url.searchParams.get("a") ? url.searchParams.get("a") : "";
-    res.end(`FRAGMENT: ${query}\n`);
+    return res.end(`FRAGMENT: ${query}\n`);
   };
-  routeHandler.add(url, function (req, res) {
-    res.writeHead(200, esiHead);
+  routeHandler.add(url, function () {
+    const res = reply(200, esiHead);
     res.say("1");
     res.write(`<esi:include src="${url}/fragment_1" />`);
     res.say("2");
     res.write(`<esi:include src="${url}/fragment_1?a=2" />`);
     res.write("3");
-    res.end(
+    return res.end(
       `<esi:include src="http://localhost:${port}${url}/fragment_1?a=3" />`,
     );
   });
@@ -93,10 +67,10 @@ test("TEST 2: postBody Function non esi", async () => {
   };
   parser = new esi(undefined, undefined, undefined, undefined, postBody);
 
-  routeHandler.add(url, function (req, res) {
+  routeHandler.add(url, function () {
     count++;
-    res.writeHead(200);
-    res.end("hello i am a body");
+    const res = reply(200);
+    return res.end("hello i am a body");
   });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();

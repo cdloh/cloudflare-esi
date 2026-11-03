@@ -1,3 +1,4 @@
+import { expect, test } from "vitest";
 import { create as createHandleChunk } from "../src/handleChunk";
 
 test("Writes a chunk with no esi", async () => {
@@ -35,7 +36,7 @@ test("Writes the before of a chunk with ESI, then prints the ESI tag and after d
       expect(hasESI).toBeFalsy();
       expect(string).toEqual("AFTER TEXT");
     } else {
-      fail();
+      expect.unreachable();
     }
   };
   const handleChunk = createHandleChunk(writer);
@@ -59,7 +60,7 @@ test("Writes the before of a chunk with ESI, then prints the ESI tag and after d
       expect(hasESI).toBeFalsy();
       expect(string).toEqual("AFTER TEXT");
     } else {
-      fail();
+      expect.unreachable();
     }
   };
   const handleChunk = createHandleChunk(writer);
@@ -84,7 +85,7 @@ test("ESI Hints should work", async () => {
       expect(hasESI).toBeFalsy();
       expect(string).toEqual("AFTER TEXT");
     } else {
-      fail();
+      expect.unreachable();
     }
   };
   const handleChunk = createHandleChunk(writer);
@@ -107,7 +108,7 @@ test("Should print our full chunk even if it doesn't complete", async () => {
       expect(hasESI).toBeFalsy();
       expect(string).toEqual("<esi:foo>dfafdsafdsa");
     } else {
-      fail();
+      expect.unreachable();
     }
   };
   const handleChunk = createHandleChunk(writer);
@@ -129,7 +130,7 @@ test("Should print our full chunk even if it's an imcomplete tag", async () => {
       expect(hasESI).toBeFalsy();
       expect(string).toEqual("<esi:foo>dfafdsafdsa");
     } else {
-      fail();
+      expect.unreachable();
     }
   };
   const handleChunk = createHandleChunk(writer);
@@ -155,7 +156,7 @@ test("Should only add hint tag on the next chunk", async () => {
       expect(hasESI).toBeFalsy();
       expect(string).toEqual("AFTER TEXT");
     } else {
-      fail();
+      expect.unreachable();
     }
   };
   const handleChunk = createHandleChunk(writer);

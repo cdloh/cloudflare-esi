@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, expect, test } from "vitest";
 import { checkSurrogate } from "./helpers";
 import { esi, ESIConfig, fetchFunction } from "../src";
 

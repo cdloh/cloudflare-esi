@@ -1,0 +1,6 @@
+{
+  // Only used by the Vitest workerd runner (see vitest.config.ts).
+  "name": "cloudflare-esi",
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": ["nodejs_compat"],
+}
