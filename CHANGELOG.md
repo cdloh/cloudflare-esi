@@ -1,3 +1,24 @@
+# [1.0.0](https://github.com/cdloh/cloudflare-esi/compare/v0.5.1...v1.0.0) (2026-11-03)
+
+
+* feat!: stream includes, add document and include hooks, single options object ([2671e81](https://github.com/cdloh/cloudflare-esi/commit/2671e816e1f70262d8489cd5fd8f5ed6dcdf45ee))
+
+
+### Features
+
+* migrate tests to Vitest on workerd and update tooling ([3141a7e](https://github.com/cdloh/cloudflare-esi/commit/3141a7e83f4733d75d0db3d1fea416649e6e13cf))
+
+
+### BREAKING CHANGES
+
+* the esi constructor takes one options object. Replace
+`new esi(config, esiFunction, fetcher, ctx, postBodyFunction)` with
+`new esi({ ...config, esiFunction, fetcher, ctx, postBodyFunction })`.
+* the library now requires IdentityTransformStream, so it
+only runs on workerd.
+* an include whose body errors part way through no longer
+drops the text before it in the same ESI tag.
+
 ## [0.5.1](https://github.com/cdloh/cloudflare-esi/compare/v0.5.0...v0.5.1) (2025-03-19)
 
 
