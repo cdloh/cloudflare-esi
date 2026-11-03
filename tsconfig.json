@@ -1,14 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "es2022",
     "module": "esnext",
     "lib": ["esnext"],
     "types": ["@cloudflare/workers-types"],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
     "declaration": true,
     "sourceMap": true,
+    "skipLibCheck": true,
+    "paths": {
+      "worktop/cookie": ["./node_modules/worktop/cookie/index.d.ts"]
+    },
+    "rootDir": "src",
     "outDir": "dist"
   },
   "include": ["src/**/*"]

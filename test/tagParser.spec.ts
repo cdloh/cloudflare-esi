@@ -1,3 +1,4 @@
+import { describe, expect, it, test } from "vitest";
 import { tagParser } from "../src/tagParser";
 
 test("Find next tag", async () => {

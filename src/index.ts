@@ -245,7 +245,7 @@ export class esi {
     text = processComments(text);
     text = processRemove(text);
     text = processESIVars(eventData, text);
-    let vars = false;
+    let vars: boolean;
     [text, vars] = await processConditionals(eventData, text);
 
     // finally our includes

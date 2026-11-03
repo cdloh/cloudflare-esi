@@ -47,7 +47,7 @@ export async function process(
 
         if (tag && tag.closing && tag.whole && tag.contents) {
           if (tag.tagname == "esi:when" && !whenMatched) {
-            // eslint-disable-next-line no-inner-declarations, jsdoc/require-jsdoc
+            // eslint-disable-next-line jsdoc/require-jsdoc
             async function processWhen(match: RegExpMatchArray) {
               const condition = match[1];
               const conditionValidated = _esi_evaluate_condition(

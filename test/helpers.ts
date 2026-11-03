@@ -1,74 +1,115 @@
-import { IncomingMessage, ServerResponse } from "http";
+// Test helpers: the parser makes its fragment requests via global fetch, and
+// workerd can't listen on sockets, so instead of a real HTTP server we mock
+// outbound requests with MSW (see network.ts / setup.ts).
+import { http, type HttpHandler } from "msw";
+import { network, unmatched } from "./network";
 
-// little shim to make it easier to copy tests from the current ledge repo
-const say = function (this: any, string: string) {
-  this.write(`${string}\n`);
+export const testingDetails = {
+  port: 8787,
+  hostname: "localhost",
+  proto: "http:",
+  url: `http://localhost:8787`,
 };
 
-export type testResponse = ServerResponse & { say: (string: string) => void };
-type handler = (req: IncomingMessage, res: testResponse) => void;
+type handler = (req: Request) => Response | Promise<Response>;
 type urlHandlerConfig = {
   persist?: boolean;
   count?: number;
 };
-type route = {
-  handle: handler;
-  config: urlHandlerConfig;
-};
-
+/**
+ * Thin wrapper around MSW: register a handler for an exact URL, hit it once.
+ */
 export class urlHandler {
-  #routes: { [key: string]: route };
   constructor() {
-    this.#routes = {};
-
     this.add = this.add.bind(this);
-    this.route = this.route.bind(this);
     this.verify = this.verify.bind(this);
     this.clean = this.clean.bind(this);
   }
 
+  /**
+   * Register a handler.
+   * Local routes are keyed by path + query ("/foo?a=1").
+   * Anything on another host is keyed by its full URL ("https://example.com/foo").
+   *
+   * @param {string} url route key
+   * @param {handler} handle handler to run
+   * @param {urlHandlerConfig} config how many times the route can be hit
+   */
   add(url: string, handle: handler, config?: urlHandlerConfig): void {
-    const defaultConfig = {
-      persist: false,
-      count: 1,
-    };
-    this.#routes[url] = {
-      handle: handle,
-      config: { ...defaultConfig, ...config },
-    };
-  }
-
-  async route(req: IncomingMessage, res: testResponse): Promise<void> {
-    if ((req.url as string) in this.#routes) {
-      res.say = say;
-      const route = this.#routes[req.url as string];
-      const returnValue = route.handle;
-
-      if (route.config.count === 1) {
-        delete this.#routes[req.url as string];
-        return returnValue(req, res);
-      }
-
-      this.#routes[req.url as string].config.count =
-        (route.config.count as number) - 1;
-      return returnValue(req, res);
-    } else {
-      console.error("TEST ROUTER: No route matched: ", req.url);
-      res.writeHead(500);
-      res.end();
-      fail();
+    const count = config?.count ?? 1;
+    const absolute = url.startsWith("/") ? testingDetails.url + url : url;
+    for (let i = 0; i < count; i++) {
+      network.use(
+        // A predicate rather than a path: MSW path matching ignores the query string
+        http.all(
+          ({ request }) => request.url === new URL(absolute).toString(),
+          ({ request }) => handle(request as unknown as Request),
+          { once: true },
+        ),
+      );
     }
   }
 
   verify(): boolean {
-    const count = Object.keys(this.#routes).length;
-    this.#routes = {};
-    return count === 0;
+    const unused = network
+      .listHandlers()
+      .filter((h) => !(h as HttpHandler).isUsed).length;
+    const unmatchedCount = unmatched.length;
+    this.clean();
+    return unused === 0 && unmatchedCount === 0;
   }
 
   clean(): void {
-    this.#routes = {};
+    network.resetHandlers();
+    unmatched.length = 0;
   }
+}
+
+/**
+ * Small builder for canned responses, so handlers read like a writer
+ * (`reply(200, headers).say("a").end("b")`).
+ */
+class Reply {
+  #chunks: string[] = [];
+  constructor(
+    private status: number,
+    private headers: Record<string, string>,
+  ) {}
+
+  write(chunk: string): this {
+    this.#chunks.push(chunk);
+    return this;
+  }
+
+  /** Write a chunk followed by a newline */
+  say(chunk: string): this {
+    return this.write(`${chunk}\n`);
+  }
+
+  end(chunk?: string): Response {
+    if (chunk !== undefined) this.write(chunk);
+    return new Response(this.#chunks.join(""), {
+      status: this.status,
+      headers: this.headers,
+    });
+  }
+}
+
+export function reply(
+  status: number = 200,
+  headers: Record<string, string> = {},
+): Reply {
+  return new Reply(status, headers);
+}
+
+/**
+ * Request headers as [name, value] pairs, host first (as a real server would see them)
+ *
+ * @param {Request} req incoming request
+ * @returns {[string, string][]} header pairs
+ */
+export function requestHeaders(req: Request): [string, string][] {
+  return [["host", new URL(req.url).host], ...req.headers];
 }
 
 export function checkSurrogate(res: Response): boolean {
