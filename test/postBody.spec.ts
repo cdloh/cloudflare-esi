@@ -25,7 +25,7 @@ test("TEST 1: postBody Function", async () => {
     count++;
     return;
   };
-  parser = new esi(undefined, undefined, undefined, undefined, postBody);
+  parser = new esi({ postBodyFunction: postBody });
 
   const printFragment = function (req: Request) {
     const res = reply();
@@ -65,7 +65,7 @@ test("TEST 2: postBody Function non esi", async () => {
     count++;
     return;
   };
-  parser = new esi(undefined, undefined, undefined, undefined, postBody);
+  parser = new esi({ postBodyFunction: postBody });
 
   routeHandler.add(url, function () {
     count++;

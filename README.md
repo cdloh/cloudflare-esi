@@ -18,6 +18,10 @@ Library supports all instructions that the Ledge parser supports. Also supports 
     - [surrogateControlHeader](#surrogatecontrolheader)
     - [thirdPartyIncludesDomainWhitelist](#thirdpartyincludesdomainwhitelist)
     - [varsCookieBlacklist](#varscookieblacklist)
+    - [onDocumentProcessed](#ondocumentprocessed)
+    - [onIncludeStart and onIncludeComplete](#onincludestart-and-onincludecomplete)
+    - [includeTapHighWaterMark](#includetaphighwatermark)
+  - [Streaming includes](#streaming-includes)
   - [Custom ESI Vars Function](#custom-esi-vars-function)
   - [Custom Fetch Function](#custom-fetch-function)
   - [Optional Post Body Function](#optional-post-body-function)
@@ -57,10 +61,12 @@ export default {
 
 ```javascript
 new esi(
-   options?: // Config
-   customESIFunction?: // Custom ESI Vars Function
-   fetcher?: // Custom Fetch Function
-   postBodyFunction?: // Optional function that will be called once the body has been completed
+   config?: ESIConfig // one object holding the settings below, plus esiFunction, fetcher, ctx and postBodyFunction
+)
+
+esi.parse(
+   request: Request,
+   recursion?: number // level to start at. 0 (the default) for the root
 )
 ```
 
@@ -77,6 +83,14 @@ export type ESIConfig = {
   surrogateControlHeader?: string;
   thirdPartyIncludesDomainWhitelist?: string[];
   varsCookieBlacklist?: string[];
+  onDocumentProcessed?: (report: ESIDocumentReport) => void | Promise<void>;
+  onIncludeStart?: (info: ESIIncludeStartInfo) => WritableStream<Uint8Array> | undefined | Promise<WritableStream<Uint8Array> | undefined>;
+  onIncludeComplete?: (info: ESIIncludeCompleteInfo) => void | Promise<void>;
+  includeTapHighWaterMark?: number;
+  esiFunction?: (request: Request) => CustomVars | Promise<CustomVars>; // CustomVars is { [key: string]: string | { [key: string]: string } }. See "Custom ESI Vars"
+  fetcher?: (request: Request, ctx: Request[]) => Promise<Response>; // see "Custom Fetch Function"
+  ctx?: Request[]; // parent requests passed to the fetcher. Normally left out
+  postBodyFunction?: () => void | Promise<void>; // see "Optional Post Body Function"
 };
 
 // defaults
@@ -87,7 +101,9 @@ const defaultConfig = {
    recursionLimit: 10,
    surrogateControlHeader: 'Surrogate-Control',
    thirdPartyIncludesDomainWhitelist: [],
-   varsCookieBlacklist: []
+   varsCookieBlacklist: [],
+   includeTapHighWaterMark: 1048576
+   // onDocumentProcessed, onIncludeStart and onIncludeComplete have no default. Nothing is called
 }
 ```
 
@@ -157,6 +173,105 @@ This is useful if your client is sending a sensitive cookie that you don't ever 
 
 
 
+#### onDocumentProcessed
+
+* *default*: none
+* *type*: `(report: ESIDocumentReport) => void | Promise<void>`
+
+Called once for every document the parser fetches, the root and each include, after that document's own body has been completely processed. It is also called for documents that were not processed for ESI (`isESI: false`), when it fires as soon as the response headers have been looked at.
+
+The report describes that document's own body only, never its descendants. Use `ctx` (the parent chain) to tie the reports of a page together.
+
+```typescript
+type ESIDocumentReport = {
+  request: Request;          // request as sent to the fetcher (ESI args removed)
+  response: Response;        // fetcher response. Headers only; the hook must not read the body
+  recursion: number;         // 0 = root
+  ctx: Request[];            // parent chain, same as passed to the fetcher
+  isESI: boolean;            // false if the document was passed through without being processed
+  includes: Array<{ src: string; resolvedUrl: string; thirdParty: boolean; allowed: boolean }>;
+  usedVars: string[];        // eg ["HTTP_COOKIE{foo}", "GEOIP_COUNTRY_CODE", "QUERY_STRING"]
+  usedEsiArgs: string[];     // eg ["esi_foo"]. "esi_*" for $(ESI_ARGS) with no key
+  usedConditionals: boolean; // esi:choose / esi:when / esi:otherwise
+  usedEsiVarsBlock: boolean; // an esi:vars block
+  varsInIncludeSrc: boolean; // an include src contained a $(...) expression
+  recursionLimitHit: boolean;// an include was skipped because of recursionLimit
+  aborted: boolean;          // the output of this document did not complete
+}
+```
+
+```javascript
+const parser = new esi({
+  onDocumentProcessed: (report) => {
+    // eg is this document's output something that could vary per request?
+    const varies = report.usedVars.length > 0 || report.usedConditionals
+    console.log(report.request.url, report.recursion, varies)
+  }
+})
+```
+
+* `usedVars`, `usedEsiArgs`, `usedConditionals`, `usedEsiVarsBlock` and `varsInIncludeSrc` are taken from the raw document, wherever vars are evaluated (`esi:vars` blocks, `esi:when` tests, include `src`, and the inside of `esi:choose`). This includes branches of an `esi:choose` that weren't taken. They answer "*could* this output vary per request" not "did it". A `RAW_` prefix is dropped: `$(RAW_HTTP_HOST)` is reported as `HTTP_HOST`.
+* `includes` lists the includes that were actually attempted, in the order they were found, including ones that the third party rules skipped (`allowed: false`). It does not list includes in branches that weren't taken, or any that were not attempted because of `recursionLimit` (that sets `recursionLimitHit`). `src` is as written in the document, `resolvedUrl` is after vars have been evaluated.
+* `isESI` is `true` only when the parser actually processed the document. If the content type or `Surrogate-Control` doesn't match, there is no body, or [surrogate delegation](#allowsurrogatedelegation) was used, it is `false` and all the usage fields are empty/false.
+* `aborted` is `true` if this document's output didn't complete: whoever was reading the output went away, or reading the document failed.
+* For ESI documents the hook is awaited before that document's output stream is closed. Whoever is reading the root's output will see the reports of the whole page by the time the stream ends. A slow hook delays the end of the stream.
+* Anything the hook throws is logged and ignored, it can't change the output.
+
+#### onIncludeStart and onIncludeComplete
+
+* *default*: none
+* *type*: `onIncludeStart: (info) => WritableStream<Uint8Array> | undefined | Promise<...>`, `onIncludeComplete: (info) => void | Promise<void>`
+
+Lets you take a copy of each include's *rendered* output (with its own includes already inlined) while the parent is being rendered, without buffering it. For example to store every include as a separate object in a cache.
+
+```typescript
+type ESIIncludeStartInfo = { request: Request; ctx: Request[]; recursion: number }
+type ESIIncludeCompleteInfo = ESIIncludeStartInfo & { aborted: boolean; error?: unknown }
+```
+
+```javascript
+const parser = new esi({
+  onIncludeStart: ({ request }) => {
+    // Return a WritableStream to be given a copy of the include's output
+    // or undefined to not bother with this one
+    const { readable, writable } = new IdentityTransformStream()
+    ctx.waitUntil(cache.put(request.url, new Response(readable)))
+    return writable
+  },
+  onIncludeComplete: ({ request, aborted, error }) => {
+    // The include and everything beneath it has finished. All the reports for it have been sent
+  }
+})
+```
+
+* `onIncludeStart` is called just before the include's output starts flowing into its parent. Which, as includes are written in document order, may be later than when the include was fetched. `request` and `ctx` are what the include's fetcher was given, `recursion` is the include's level (1 and up). The root document is never offered, you can tee that yourself.
+* If a `WritableStream` is returned it is given the same bytes that are spliced into the parent.
+* The copy never holds up the parent. If the tap's writable falls more than [includeTapHighWaterMark](#includetaphighwatermark) bytes behind it is aborted and the parent carries on without it.
+* The tap's writable is closed only if the include completed cleanly. If the output goes away or the include's own stream errors, it is aborted (with that reason) instead, so you never commit a partial object.
+* `onIncludeComplete` is called once the include and everything beneath it has finished. It always runs after every [onDocumentProcessed](#ondocumentprocessed) call for that include's subtree. `aborted` is `true` if the output went away before the include completed. `error` is set if the include's own stream errored; the parent carries on, as any bytes already written can't be taken back. Neither is set just because a tap was dropped for being too slow, your writable is told directly. The parent doesn't finish until the `onIncludeComplete` calls of its includes have, but it doesn't wait for your tap writables to finish flushing.
+* Includes that were never fetched (third party rules, `recursionLimit`) aren't offered.
+* Anything the hooks throw is logged and ignored. A throwing `onIncludeStart` is treated as returning `undefined`.
+
+#### includeTapHighWaterMark
+
+* *default*: `1048576` (1MB)
+* *type*: `number`
+
+How many bytes an `onIncludeStart` writable may be behind (bytes given to it that it hasn't accepted yet) before it's aborted.
+
+```javascript
+new esi({ includeTapHighWaterMark: 256 * 1024, onIncludeStart })
+```
+
+### Streaming includes
+
+Includes are not buffered. Each include's body is piped straight into the parent's output as soon as it's that include's turn. Output order is the same as it always has been, but memory use no longer depends on the size of the includes.
+
+* Includes are still fetched as soon as they are found, concurrently. A later include that is ready early waits as an unread stream until the includes before it have been written.
+* Includes are only read as fast as the output is consumed. If the client is slow, nothing reads ahead of it beyond normal stream queueing.
+* The parser also stops reading a document's own text when about 1MB of it is waiting to be written, until the consumer catches up.
+* The stream the parser writes to is an `IdentityTransformStream`, as workerd's plain `TransformStream` stops applying backpressure once its reader has started reading.
+
 
 ### Custom ESI Vars Function
 
@@ -206,7 +321,7 @@ const geoIPVarsFromRequest = function (request) {
 }
 
 // create a new parser with default config
-new esi(undefined, geoIPVarsFromRequest)
+new esi({ esiFunction: geoIPVarsFromRequest })
 
 ```
 
@@ -252,7 +367,7 @@ const customFetcher = async function(request) {
 }
 
 // create a new parser with default config
-new esi(undefined, undefined, customFetcher)
+new esi({ fetcher: customFetcher })
 
 ```
 
@@ -260,6 +375,14 @@ new esi(undefined, undefined, customFetcher)
 ### Optional Post Body Function
 
 If you need to do extra work once the body has completed streaming, eg you record how many fetches your custom fetcher handles. Or need to fire off some context.waitUntil functions at the end you can fire them after this function has been called.
+
+```javascript
+new esi({
+  postBodyFunction: () => {
+    console.log("parse complete")
+  },
+})
+```
 
 
 ## Caching and upstream requests

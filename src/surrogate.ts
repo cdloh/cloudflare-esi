@@ -1,9 +1,9 @@
 import {
-  FullESIConfig,
   getProcessorToken,
   getProcessorVersion,
   getProcessorVersionString,
 } from ".";
+import type { FullESIConfig } from "./types";
 import { getheaderToken } from "./headerUtils";
 
 /**

@@ -1,4 +1,3 @@
-import { create as createHandleChunk } from "./handleChunk";
 import { process as processEscaping } from "./processEscaping";
 import { process as processComments } from "./processComments";
 import { process as processRemove } from "./processRemove";
@@ -11,106 +10,23 @@ import {
   splitESIToken,
 } from "./surrogate";
 import { getheaderToken } from "./headerUtils";
+import { fireReport } from "./hooks";
+import { Segment } from "./segments";
+import { createOutputStream, streamBody } from "./streamBody";
+import { UsageCollector } from "./usage";
+import { getVars } from "./vars";
+import type {
+  customESIVarsFunction,
+  ESIConfig,
+  ESIEventData,
+  FullESIConfig,
+  fetchFunction,
+  ParseResult,
+  postBodyFunction,
+} from "./types";
 
-/**
- * Config for the parser
- *
- * @property {boolean | string[]} allowSurrogateDelegation - Allows Surrogate Delegation
- * If boolean and the Request has valid Surrogate Delegation headers then no parsing will take place and requests will be sent onwards
- * If Array of strings then each string is treated as an IP Address. If the originally connecting IP matches one of those IPs then Delegation will happen
- * @property {string[]} contentTypes - Array of strings of content types that the parser should parse for ESI Tags
- * Note: That these are case sensitive. See - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
- * @property {boolean} disableThirdPartyIncludes - Whether or not to enable third party includes (includes from other domains)
- * @property {number} [recursionLimit] - Levels of recursion the parser is allowed to include before bailing out
- * think includes that include themselves causing recursion
- * @default 10
- * @property {string} surrogateControlHeader - Name of the header that the library will check for Surrogate-Control
- * We allow customisation as Cloudflare priorities Surrogate-Control over Cache-Control
- * @property {string[]} thirdPartyIncludesDomainWhitelist - If third party includes are disabled you can white list them by including domains here
- * @property {string[]} varsCookieBlacklist - Array of strings of cookies that will be blacklisted from being expanded in esi VARs.
- */
-export type ESIConfig = {
-  allowSurrogateDelegation?: boolean | string[];
-  contentTypes?: string[];
-  disableThirdPartyIncludes?: boolean;
-  recursionLimit?: number;
-  surrogateControlHeader?: string;
-  thirdPartyIncludesDomainWhitelist?: string[] | null;
-  varsCookieBlacklist?: string[] | null;
-};
-
-export type ESIVars = {
-  headers: { [key: string]: string };
-  method: string;
-  esiArgs: URLSearchParams;
-  url: URL;
-};
-
-/**
- * ESI Event Data for the Current Request
- *
- * @property {ESIConfig} config - ESIConfig when class was created
- * @property {object} headers - All headers of the request in uppercase
- * @property {string} method - Method of the request
- * @property {URLSearchParams} esiArgs - Any ESI Arguments extracted from the URL Search params of the original request
- * Will be a URLSearchParam encoded object
- * @property {customESIVars} customVars - If a custom ESI Vars function is supplied this will be the result of that function
- * @property {URL} url - URL Object of the Request with ESI Args removed
- * @property {Request} request - Request object after ESI Args have been removed
- * @property {number} recursion - Recursion level we're currently at
- */
-export type ESIEventData = {
-  /**
-   * {ESIConfig} for the current Request
-   */
-  config: FullESIConfig;
-  /**
-   * All headers of the current Request in {Object}
-   * All headers are in uppercase and - is converted to _
-   */
-  headers: { [key: string]: string };
-  /**
-   * Request Method
-   */
-  method: string;
-  /**
-   * Any ESI Arguments
-   */
-  esiArgs: URLSearchParams;
-  /**
-   * If a custom ESI Vars function is supplied this will be the result of that function
-   *
-   * @default false
-   */
-  customVars?: customESIVars;
-  /**
-   * {URL} Object of the Request with any ESI Args removed
-   */
-  url: URL;
-  /**
-   * Mutatable {Request} object with the ESI Args removed
-   */
-  request: Request;
-  /**
-   * Level of recursion the function is currently at
-   *
-   * @default 0
-   */
-  recursion: number;
-};
-
-export type customESIVars = {
-  [key: string]: string | { [key: string]: string };
-};
-export type customESIVarsFunction = (
-  request: Request,
-) => Promise<customESIVars> | customESIVars;
-export type fetchFunction = (
-  request: Request,
-  ctx: Request[],
-) => Promise<Response>;
-export type postBodyFunction = () => void | Promise<void>;
-export type FullESIConfig = Required<ESIConfig>;
+export * from "./types";
+export { esiArgsPrefix } from "./vars";
 
 const processorToken = "ESI";
 const processorVersion = 1.0;
@@ -133,44 +49,68 @@ export class esi {
   postBodyFunction?: postBodyFunction;
   ctx: Request[];
 
-  constructor(
-    options?: ESIConfig,
-    customESIFunction?: customESIVarsFunction,
-    fetcher: fetchFunction = defaultFetch,
-    ctx: Request[] = [],
-    postBodyFunction?: postBodyFunction,
-  ) {
+  constructor(config: ESIConfig = {}) {
+    const {
+      esiFunction,
+      fetcher = defaultFetch,
+      ctx = [],
+      postBodyFunction,
+      ...options
+    } = config;
     this.options = { ...defaultConfig, ...options };
+    this.esiFunction = esiFunction;
     this.fetcher = fetcher;
-    this.esiFunction = customESIFunction;
-    this.postBodyFunction = postBodyFunction;
     this.ctx = ctx;
+    this.postBodyFunction = postBodyFunction;
   }
 
+  /**
+   * Parses a request, fetching it and processing the ESI in the response
+   *
+   * @param {Request} origRequest the request to fetch and parse
+   * @param {number} [recursion] recursion level we're starting at (0 for the root)
+   * @returns {Promise<Response>} Response with the processed body streaming through it
+   */
   async parse(origRequest: Request, recursion = 0): Promise<Response> {
+    return (await this.parseInternal(origRequest, recursion)).response;
+  }
+
+  /**
+   * Does the work of `parse`. Includes use it directly as they need more than the response.
+   *
+   * @param {Request} origRequest the request to fetch and parse
+   * @param {number} recursion recursion level
+   * @returns {Promise<ParseResult>} the response along with details the parent needs for includes
+   */
+  async parseInternal(
+    origRequest: Request,
+    recursion: number,
+  ): Promise<ParseResult> {
     // Hit our limit? Bail out
-    const limit = this.options.recursionLimit as number;
-    if (recursion >= limit) {
+    if (recursion >= this.options.recursionLimit!) {
       // We dont have to set the URL value here
       // As we're going to get here in a ESI loop
       // And the parent value will have a URL set
-      return new Response("");
+      return {
+        response: new Response(""),
+        request: origRequest,
+        ctx: this.ctx.slice(),
+        settled: Promise.resolve(),
+      };
     }
 
     // Get our HTTP_VARS & ESI Vars
     // Remove ESI Vars if they're in the request
     // Return a brand new request
-    // eslint-disable-next-line
-    let [request, esiVars] = getVars(origRequest);
+    const [mutableRequest, esiVars] = getVars(origRequest);
 
     // Load custom values if we can
-    let customESIVariables;
-    if (this.esiFunction) {
-      customESIVariables = await this.esiFunction(origRequest);
-    }
+    const customVars = this.esiFunction
+      ? await this.esiFunction(origRequest)
+      : undefined;
 
     // Add SurrogateControl header or append to it
-    request = advertiseSurrogateControl(request);
+    const request = advertiseSurrogateControl(mutableRequest);
 
     // pack our nice stuff in
     const eventData: ESIEventData = {
@@ -178,14 +118,18 @@ export class esi {
       headers: esiVars.headers,
       method: esiVars.method,
       esiArgs: esiVars.esiArgs,
-      customVars: customESIVariables,
+      customVars,
       url: esiVars.url,
-      request: request,
-      recursion: recursion,
+      request,
+      recursion,
+      usage: this.options.onDocumentProcessed
+        ? new UsageCollector()
+        : undefined,
     };
 
     // grab the response from the upstream
-    const response = await this.fetcher(request, this.ctx.slice());
+    const fetchCtx = this.ctx.slice();
+    const response = await this.fetcher(request, fetchCtx);
 
     // pop this new request into our contexts
     // do it after the request so only includes pick it up and not the request itself
@@ -196,26 +140,73 @@ export class esi {
     // * Responses that aren't an allowed content type
     // * Responses with Surrogate-Control is outside of our support
     // * We can delegate Surrogate downstream
-    if (
-      !response.body ||
-      !this.validContentType(response) ||
-      !this.validSurrogateControl(response) ||
-      canDelegateToSurrogate(origRequest, this.options)
-    ) {
-      const resp = new Response(response.body, response);
-      // We set the URL manually here as it doesn't come across from the copy˛
-      Object.defineProperty(resp, "url", { value: response.url });
-      // process postBody function if relevant
-      if (this.postBodyFunction) {
-        this.postBodyFunction();
-      }
-      return resp;
-    }
+    const isESI =
+      !!response.body &&
+      this.validContentType(response) &&
+      this.validSurrogateControl(response) &&
+      !canDelegateToSurrogate(origRequest, this.options);
 
-    const { readable, writable } = new TransformStream();
+    return isESI
+      ? this.processBody(eventData, response, fetchCtx)
+      : this.passThrough(eventData, response, fetchCtx);
+  }
+
+  /**
+   * Response we don't process. Sent on as is
+   *
+   * @param {ESIEventData} eventData event data
+   * @param {Response} response the upstream response
+   * @param {Request[]} fetchCtx ctx passed to the fetcher
+   * @returns {ParseResult} the response
+   */
+  private passThrough(
+    eventData: ESIEventData,
+    response: Response,
+    fetchCtx: Request[],
+  ): ParseResult {
+    const { request } = eventData;
+    const resp = new Response(response.body, response);
+    // We set the URL manually here as it doesn't come across from the copy˛
+    Object.defineProperty(resp, "url", { value: response.url });
+
+    // There was nothing for us to process so the report can go out now
+    const settled = fireReport(
+      this.options.onDocumentProcessed,
+      {
+        request,
+        response,
+        recursion: eventData.recursion,
+        ctx: fetchCtx,
+        isESI: false,
+        aborted: false,
+      },
+      eventData.usage,
+    );
+    // process postBody function if relevant
+    if (this.postBodyFunction) {
+      this.postBodyFunction();
+    }
+    return { response: resp, request, ctx: fetchCtx, settled };
+  }
+
+  /**
+   * Response we do process. The response returned streams the processed body
+   *
+   * @param {ESIEventData} eventData event data
+   * @param {Response} response the upstream response
+   * @param {Request[]} fetchCtx ctx passed to the fetcher
+   * @returns {ParseResult} the response
+   */
+  private processBody(
+    eventData: ESIEventData,
+    response: Response,
+    fetchCtx: Request[],
+  ): ParseResult {
+    const { request } = eventData;
+    const { readable, writable } = createOutputStream();
 
     // Create mutable response to return to the client, using the readable
-    // side of the `TransformStream` as the body. As we write to the
+    // side of the output stream as the body. As we write to the
     // writable side, this response will read from it.
     const mutResponse = new Response(readable, response);
     // We set the URL manually here as it doesn't come across from the copy˛
@@ -234,127 +225,81 @@ export class esi {
     // Remove surrogate-control
     mutResponse.headers.delete(this.options.surrogateControlHeader);
 
-    // `streamBody` will free the request context when finished
-    this.streamBody(eventData, response.body, writable);
+    const settled = this.streamBody(
+      eventData,
+      response.body as ReadableStream,
+      writable,
+      (aborted) =>
+        fireReport(
+          this.options.onDocumentProcessed,
+          {
+            request,
+            response,
+            recursion: eventData.recursion,
+            ctx: fetchCtx,
+            isESI: true,
+            aborted,
+          },
+          eventData.usage,
+        ),
+    );
 
-    return mutResponse;
+    return { response: mutResponse, request, ctx: fetchCtx, settled };
   }
 
-  async handleESI(eventData: ESIEventData, text: string): Promise<string> {
+  /**
+   * Processes a chunk of ESI into segments of text and streaming includes
+   *
+   * @param {ESIEventData} eventData event data of the document
+   * @param {string} text chunk of ESI
+   * @returns {Promise<Segment[]>} segments in document order
+   */
+  async handleESISegments(
+    eventData: ESIEventData,
+    text: string,
+  ): Promise<Segment[]> {
     text = processEscaping(text);
     text = processComments(text);
     text = processRemove(text);
+    eventData.usage?.scan(text);
     text = processESIVars(eventData, text);
     let vars: boolean;
     [text, vars] = await processConditionals(eventData, text);
 
     // finally our includes
-    text = await processIncludes(
-      eventData,
-      text,
-      vars,
-      this.fetcher,
-      this.ctx,
-      this.esiFunction,
-    );
-
-    return text;
+    return processIncludes(eventData, text, vars, this);
   }
+
   // eslint-disable-next-line require-await
   async handleTEXT(eventData: ESIEventData, text: string): Promise<string> {
     return text;
   }
 
+  /**
+   * Reads the document, processes it and writes the result to the writable.
+   *
+   * @param {ESIEventData} eventData event data of the document
+   * @param {ReadableStream} readable body of the document
+   * @param {WritableStream} writable where to write the processed document
+   * @param {Function} [report] sends the document's report. Called at most once
+   * @returns {Promise<void>} resolves once the document has completely finished. Never rejects
+   */
   streamBody(
     eventData: ESIEventData,
     readable: ReadableStream,
     writable: WritableStream,
-  ) {
-    const reader = readable.getReader();
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-
-    // Output
-    // pending actions awaiting a response
-    const output: Array<Promise<string>> = [];
-    let pending: boolean;
-    let ended: boolean;
-
-    /**
-     * Flushes output to the Writeable Stream
-     */
-    const flush_output = async () => {
-      // Can't call this if we're waiting for an sync option to complete
-      if (pending) {
-        return;
-      }
-
-      // Mark as pending
-      pending = true;
-
-      // Loop through the pending list
-      if (output.length) {
-        const esi = output[0];
-
-        esi
-          .then(null, function (e) {
-            // on error
-            // Write nothing out
-            console.log(e);
-            return "";
-          })
-          .then(function (r) {
-            const writer = writable.getWriter();
-            writer.write(encoder.encode(r));
-            output.shift();
-            pending = false;
-            writer.releaseLock();
-            flush_output();
-          });
-      } else {
-        pending = false;
-      }
-
-      if (ended && output.length === 0) {
-        const writer = writable.getWriter();
-        await writer.close();
-
-        // we're completely done now notify the post body function
-        if (this.postBodyFunction) {
-          this.postBodyFunction();
-        }
-      }
-    };
-
-    const writer = (text: string, esi: boolean) => {
-      if (esi) {
-        output.push(this.handleESI(eventData, text));
-      } else {
-        output.push(this.handleTEXT(eventData, text));
-      }
-      flush_output();
-    };
-
-    // bind this so we can still see outside within the reader function
-    const writerBound = writer.bind(this);
-
-    const handler = createHandleChunk(writerBound);
-
-    reader.read().then(function processBlob(blob): Promise<void> | undefined {
-      const chunk: ArrayBuffer = blob.value;
-      const done: boolean = blob.done;
-      // decode it
-      const decodedChunk: string = decoder.decode(chunk, { stream: true });
-      handler(decodedChunk, done);
-
-      // we're done bail out
-      if (done) {
-        ended = true;
-        flush_output();
-        return;
-      }
-
-      return reader.read().then(processBlob);
+    report?: (aborted: boolean) => Promise<void>,
+  ): Promise<void> {
+    return streamBody({
+      config: this.options,
+      readable,
+      writable,
+      processChunk: (text, isESI) =>
+        isESI
+          ? this.handleESISegments(eventData, text)
+          : this.handleTEXT(eventData, text).then((t) => [t]),
+      report,
+      postBody: this.postBodyFunction,
     });
   }
 
@@ -389,57 +334,6 @@ export class esi {
     }
     return false;
   }
-}
-
-//
-// Return
-// Pass in variables into ESI which identifies the request
-//
-export const esiArgsPrefix = "esi_";
-const esiArgsRegex = /^esi_(\S+)/;
-/**
- * Takes the original Request and strips ESI Args from the request
- * Return a brand new mutatable Request along with an ESIVars object
- *
- * @param {Request} request - Original Request
- * @returns {[Request, ESIVars]} - Mutatable Request and ESIVars
- */
-function getVars(request: Request): [Request, ESIVars] {
-  const vars: ESIVars = {
-    headers: {},
-    method: request.method,
-    esiArgs: new URLSearchParams(),
-    url: new URL(request.url),
-  };
-
-  // We create our own array here
-  // because if we use the iterator directly and cleanup a key
-  // it causes the loop to skip one as the iterator doesn't update correctly
-  const current = new URL(request.url);
-  const keys = Array.from(current.searchParams.keys());
-
-  for (const key of keys) {
-    const match = key.match(esiArgsRegex);
-    if (match && match[1]) {
-      for (const entry of current.searchParams.getAll(key)) {
-        // have to append each entry seperatrely
-        // trying to push an array results in sanatised arguments
-        vars.esiArgs.append(esiArgsPrefix + match[1], entry);
-      }
-      current.searchParams.delete(key);
-    }
-  }
-
-  // Save the URL without the ESI args
-  vars.url = current;
-
-  // Make them match the nice standard they we have
-  for (const header of request.headers.entries()) {
-    vars.headers[header[0].replace(/-/g, "_").toUpperCase()] = header[1];
-  }
-
-  // return a brand new
-  return [new Request(current.toString(), request), vars];
 }
 
 /**

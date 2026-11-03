@@ -33,7 +33,7 @@ test("TEST 1: Custom Fetcher", async () => {
   const customFetch: fetchFunction = async function (request) {
     return new Response("CONTENT HERE");
   };
-  parser = new esi(config, undefined, customFetch);
+  parser = new esi({ ...config, fetcher: customFetch });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
@@ -53,7 +53,7 @@ test("TEST 2: Custom Fetcher with ESI", async () => {
       { headers: esiHead },
     );
   };
-  parser = new esi(config, undefined, customFetch);
+  parser = new esi({ ...config, fetcher: customFetch });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
@@ -72,7 +72,7 @@ test("TEST 3: Custom Fetcher with ESI with includes", async () => {
       );
     return new Response("OK");
   };
-  parser = new esi(config, undefined, customFetch);
+  parser = new esi({ ...config, fetcher: customFetch });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
@@ -86,7 +86,7 @@ test("TEST 4: Custom Fetcher might want to use the POST Body", async () => {
     const r = request as Request;
     return new Response(r.bodyUsed.toString());
   };
-  parser = new esi(config, undefined, customFetch);
+  parser = new esi({ ...config, fetcher: customFetch });
   const res = await makeRequest(url, { method: "POST", body: "POST BODY" });
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
@@ -105,7 +105,7 @@ test("TEST 5: Custom Fetcher should pass the ctx down (ie parent requets)", asyn
       );
     return new Response(`MY CTX SHOULD JUST BE ME AND PARENT: ${ctx?.length}`);
   };
-  parser = new esi(config, undefined, customFetch);
+  parser = new esi({ ...config, fetcher: customFetch });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();
@@ -132,7 +132,7 @@ test("TEST 6: Custom Fetcher should pass the ctx down across multiple esi", asyn
       );
     return new Response(`MY CTX SHOULD JUST BE ME AND PARENT: ${ctx?.length}`);
   };
-  parser = new esi(config, undefined, customFetch);
+  parser = new esi({ ...config, fetcher: customFetch });
   const res = await makeRequest(url);
   expect(res.ok).toBeTruthy();
   expect(checkSurrogate(res)).toBeTruthy();

@@ -1,5 +1,6 @@
 import { parse } from "worktop/cookie";
-import { ESIEventData, esiArgsPrefix } from ".";
+import type { ESIEventData } from "./types";
+import { esiArgsPrefix } from "./vars";
 
 const esiVarsRegex = /(<esi:vars>)(.*?)(<\/esi:vars>)/gs;
 const esiVarsPatternRegex =
@@ -48,6 +49,31 @@ export function replace_vars(
   return str.replace(esiVarsPatternRegex, function (...match) {
     return cb(eventData, match);
   });
+}
+
+export type ExtractedVar = {
+  /** Var name, without any RAW_ prefix */
+  name: string;
+  /** Key if the var was used like $(NAME{key}) */
+  key: string | null;
+};
+
+/**
+ * Lists every ESI var expression in a string without evaluating them
+ *
+ * @param {string} str string to search
+ * @returns {ExtractedVar[]} vars in order of appearance (not deduped)
+ */
+export function extractVars(str: string): ExtractedVar[] {
+  const found: ExtractedVar[] = [];
+  for (const match of str.matchAll(esiVarsPatternRegex)) {
+    let name = match[1];
+    if (name.substring(0, 4) == "RAW_") {
+      name = name.substring(4);
+    }
+    found.push({ name, key: match[2] == "" ? null : match[2] });
+  }
+  return found;
 }
 
 /**
