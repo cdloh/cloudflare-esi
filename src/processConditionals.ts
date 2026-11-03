@@ -1,4 +1,4 @@
-import { ESIEventData } from ".";
+import type { ESIEventData } from "./types";
 import { tagParser } from "./tagParser";
 import { replace_vars, esi_eval_var } from "./processESIVars";
 

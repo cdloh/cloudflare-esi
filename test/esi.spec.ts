@@ -626,7 +626,7 @@ test("TEST 9h: Custom variable injection", async () => {
       CUSTOM_STRING: "foo",
     };
   };
-  parser = new esi(config, customVaribles);
+  parser = new esi({ ...config, esiFunction: customVaribles });
   routeHandler.add(url, function () {
     const res = reply(200, esiHead);
     res.write("<esi:vars>");
@@ -664,7 +664,7 @@ test("TEST 9i: Custom variable injection in fragment", async () => {
       CUSTOM_STRING: "foo",
     };
   };
-  parser = new esi(config, customVaribles);
+  parser = new esi({ ...config, esiFunction: customVaribles });
   routeHandler.add(url, function () {
     const res = reply(200, esiHead);
     return res.end(`<esi:include src="${url}/fragment_1" />`);
